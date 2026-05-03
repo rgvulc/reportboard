@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report.title }} — Reportboard{% endblock %}
+
+{% block content %}
+<div class="report-header">
+    <a class="back-link" href="{{ url_for('workspaces.view', workspace_id=workspace.id) }}">← {{ workspace.name }}</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flashes">
+            {% for category, msg in messages %}
+                <li class="flash flash-{{ category }}">{{ msg }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<form method="post" action="{{ url_for('reports.save', report_id=report.id) }}" class="report-form">
+    <input type="text" name="title" value="{{ report.title }}" required class="report-title">
+
+    <div class="report-fields">
+        <label class="report-field">
+            <span>Board</span>
+            <select name="board_id">
+                {% for b in boards %}
+                    <option value="{{ b.id }}" {% if b.id == report.board_id %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label class="report-field">
+            <span>Importance</span>
+            <select name="importance_id">
+                <option value="">—</option>
+                {% for i in importance_levels %}
+                    <option value="{{ i.id }}" {% if i.id == report.importance_id %}selected{% endif %}>{{ i.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label class="report-field report-field-tags">
+            <span>Tags</span>
+            <input type="text" name="tags" value="{{ tags_display }}"
+                   placeholder="comma, separated, tags" list="tag-suggestions" autocomplete="off">
+            <datalist id="tag-suggestions">
+                {% for name in all_tag_names %}
+                    <option value="{{ name }}"></option>
+                {% endfor %}
+            </datalist>
+        </label>
+    </div>
+
+    <textarea id="content" name="content">{{ report.content }}</textarea>
+
+    <div class="report-attachment-upload">
+        <label class="report-field report-field-attach">
+            <span>Attach a file (any type)</span>
+            <input type="file" id="attachment-file-input">
+        </label>
+        <span class="report-attach-hint">Tip: paste or drag images directly into the editor.</span>
+    </div>
+
+    <div class="report-actions">
+        <button type="submit" class="primary">Save</button>
+        <span class="report-timestamps">
+            Created {{ report.created_at[:19] }} · Updated {{ report.updated_at[:19] }}
+        </span>
+    </div>
+</form>
+
+<section class="report-checklist-section">
+    <h2>Checklist</h2>
+    {% with items=checklist_items, report_id=report.id %}
+        {% include "reports/_checklist.html" %}
+    {% endwith %}
+</section>
+
+<form method="post" action="{{ url_for('reports.delete', report_id=report.id) }}" class="report-delete-form"
+      onsubmit="return confirm('Delete this report? This cannot be undone.');">
+    <button type="submit" class="delete-button">Delete report</button>
+</form>
+
+<script>
+window.UPLOAD_URL = "{{ url_for('attachments.upload', report_id=report.id) }}";
+
+document.addEventListener('DOMContentLoaded', function () {
+    function uploadFile(file) {
+        const fd = new FormData();
+        fd.append('file', file);
+        return fetch(window.UPLOAD_URL, { method: 'POST', body: fd })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Upload failed: ' + r.status);
+                return r.json();
+            });
+    }
+
+    const easyMDE = new EasyMDE({
+        element: document.getElementById('content'),
+        minHeight: '320px',
+        spellChecker: false,
+        autoDownloadFontAwesome: false,
+        status: false,
+        uploadImage: true,
+        imageUploadFunction: function (file, onSuccess, onError) {
+            uploadFile(file)
+                .then(function (data) { onSuccess(data.url); })
+                .catch(function (err) { onError(err.message || String(err)); });
+        },
+    });
+
+    const fileInput = document.getElementById('attachment-file-input');
+    fileInput.addEventListener('change', function () {
+        const file = fileInput.files[0];
+        if (!file) return;
+        uploadFile(file)
+            .then(function (data) {
+                const cm = easyMDE.codemirror;
+                cm.replaceSelection(data.markdown_ref);
+                fileInput.value = '';
+            })
+            .catch(function (err) { alert(err.message || String(err)); });
+    });
+});
+</script>
+{% endblock %}

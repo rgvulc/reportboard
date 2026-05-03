@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — Reportboard{% endblock %}
+
+{% macro settings_section(title, description, items, counts, kind, id_field) %}
+<section class="settings-section">
+    <h2>{{ title }}</h2>
+    <p class="settings-description">{{ description }}</p>
+
+    <ul class="settings-list" data-id-field="{{ id_field }}"
+        data-reorder-url="{{ url_for('settings.reorder_boards' if kind == 'boards' else 'settings.reorder_importance') }}">
+        {% for item in items %}
+            {% set count = counts.get(item.id, 0) %}
+            <li class="settings-item" data-id="{{ item.id }}">
+                <span class="settings-drag-handle" title="Drag to reorder" aria-hidden="true">⋮⋮</span>
+
+                <form method="post" class="settings-rename"
+                      action="{{ url_for('settings.rename_board' if kind == 'boards' else 'settings.rename_importance', **{('board_id' if kind == 'boards' else 'importance_id'): item.id}) }}">
+                    <input type="text" name="name" value="{{ item.name }}" required>
+                    <button type="submit">Rename</button>
+                </form>
+
+                <span class="settings-count">{{ count }} report{{ '' if count == 1 else 's' }}</span>
+
+                <form method="post" class="settings-delete"
+                      action="{{ url_for('settings.delete_board' if kind == 'boards' else 'settings.delete_importance', **{('board_id' if kind == 'boards' else 'importance_id'): item.id}) }}"
+                      onsubmit="return confirm('Delete {{ item.name }}?');">
+                    <button type="submit" class="delete-button"
+                            {% if count > 0 %}disabled title="Reassign the {{ count }} report{{ '' if count == 1 else 's' }} using this first"{% endif %}>
+                        Delete
+                    </button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <form method="post" class="settings-add"
+          action="{{ url_for('settings.add_board' if kind == 'boards' else 'settings.add_importance') }}">
+        <input type="text" name="name" placeholder="+ New {{ title.lower().rstrip('s') }}" required>
+        <button type="submit">Add</button>
+    </form>
+</section>
+{% endmacro %}
+
+{% block content %}
+<div class="settings-header">
+    <a class="back-link" href="{{ url_for('workspaces.index') }}">← Workspaces</a>
+    <h1>Settings</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flashes">
+            {% for category, msg in messages %}
+                <li class="flash flash-{{ category }}">{{ msg }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+{{ settings_section(
+    'Boards',
+    'Boards are shared across all workspaces and define the columns on every kanban view.',
+    boards, board_counts, 'boards', 'board_ids'
+) }}
+
+{{ settings_section(
+    'Importance levels',
+    'Importance levels are assignable to any report.',
+    importance_levels, importance_counts, 'importance', 'importance_ids'
+) }}
+{% endblock %}

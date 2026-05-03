@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Workspaces — Reportboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Workspaces</h1>
+    <a class="settings-link" href="{{ url_for('settings.index') }}">Settings</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flashes">
+            {% for category, msg in messages %}
+                <li class="flash flash-{{ category }}">{{ msg }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<form method="post" action="{{ url_for('workspaces.create') }}" class="workspace-create">
+    <input type="text" name="name" placeholder="New workspace name" required>
+    <button type="submit">Create</button>
+</form>
+
+{% if workspaces %}
+    <ul class="workspace-list">
+        {% for ws in workspaces %}
+            <li class="workspace-item" data-id="{{ ws.id }}">
+                <span class="workspace-drag-handle" title="Drag to reorder" aria-hidden="true">⋮⋮</span>
+
+                <form method="post" action="{{ url_for('workspaces.rename', workspace_id=ws.id) }}" class="workspace-rename">
+                    <input type="text" name="name" value="{{ ws.name }}" required>
+                    <button type="submit">Rename</button>
+                </form>
+
+                <a class="workspace-open" href="{{ url_for('workspaces.view', workspace_id=ws.id) }}">Open</a>
+
+                <form method="post" action="{{ url_for('workspaces.move', workspace_id=ws.id) }}" class="workspace-move">
+                    <button type="submit" name="direction" value="up" {% if loop.first %}disabled{% endif %}>↑</button>
+                    <button type="submit" name="direction" value="down" {% if loop.last %}disabled{% endif %}>↓</button>
+                </form>
+
+                <form method="post" action="{{ url_for('workspaces.delete', workspace_id=ws.id) }}" class="workspace-delete"
+                      onsubmit="return confirm('Delete workspace {{ ws.name }}? This will remove all its reports.');">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="empty">No workspaces yet — create one above.</p>
+{% endif %}
+{% endblock %}

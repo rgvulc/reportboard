@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+data/reportboard.db
+data/reportboard.db-journal
+data/reportboard.db-wal
+data/reportboard.db-shm
+data/attachments/
+
+instance/
+*.egg-info/

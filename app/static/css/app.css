@@ -1,0 +1,566 @@
+:root {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --border: #d0d0d0;
+    --text: #1a1a1a;
+    --muted: #666666;
+    --accent: #2563eb;
+    --column-bg: #ececec;
+    --hover-tint: #eef2ff;
+    --error-bg: #fee2e2;
+    --error-text: #991b1b;
+    --error-border: #fecaca;
+    --danger-text: #b91c1c;
+    --danger-border: #fca5a5;
+    --danger-hover-bg: #fee2e2;
+    --ghost-bg: #eef2ff;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1a1a1a;
+        --surface: #262626;
+        --border: #3a3a3a;
+        --text: #e8e8e8;
+        --muted: #a1a1a1;
+        --accent: #60a5fa;
+        --column-bg: #2a2a2a;
+        --hover-tint: #1e3a5f;
+        --error-bg: #3f1d1d;
+        --error-text: #fecaca;
+        --error-border: #7f1d1d;
+        --danger-text: #fca5a5;
+        --danger-border: #7f1d1d;
+        --danger-hover-bg: #3f1d1d;
+        --ghost-bg: #1e3a5f;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+main {
+    padding: 1rem 1.5rem;
+    max-width: 64rem;
+    margin: 0 auto;
+}
+
+h1 {
+    margin-top: 0;
+}
+
+.flashes {
+    list-style: none;
+    padding: 0;
+}
+
+.flash {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.flash-error {
+    background: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error-border);
+}
+
+.workspace-create {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.workspace-create input[type="text"] {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.workspace-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.workspace-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--surface);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.workspace-drag-handle {
+    cursor: grab;
+    color: var(--muted);
+    user-select: none;
+    padding: 0 0.25rem;
+    letter-spacing: -0.15rem;
+    font-weight: bold;
+}
+
+.workspace-drag-handle:active {
+    cursor: grabbing;
+}
+
+.board-card {
+    cursor: grab;
+}
+
+.board-card:active {
+    cursor: grabbing;
+}
+
+.checklist-item {
+    cursor: grab;
+}
+
+.checklist-item:active {
+    cursor: grabbing;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    background: var(--ghost-bg);
+}
+
+.page-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.settings-link {
+    margin-left: auto;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.settings-link:hover {
+    color: var(--accent);
+    background: var(--hover-tint);
+}
+
+.settings-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.settings-section {
+    margin-bottom: 2rem;
+}
+
+.settings-section h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+}
+
+.settings-description {
+    color: var(--muted);
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+}
+
+.settings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+}
+
+.settings-drag-handle {
+    cursor: grab;
+    color: var(--muted);
+    user-select: none;
+    padding: 0 0.25rem;
+    letter-spacing: -0.15rem;
+    font-weight: bold;
+}
+
+.settings-drag-handle:active {
+    cursor: grabbing;
+}
+
+.settings-rename {
+    display: flex;
+    gap: 0.25rem;
+    margin: 0;
+    flex: 1;
+}
+
+.settings-rename input[type="text"] {
+    flex: 1;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.settings-count {
+    color: var(--muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.settings-delete {
+    margin: 0;
+}
+
+.settings-add {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.settings-add input[type="text"] {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+}
+
+.workspace-item form {
+    display: flex;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.workspace-rename {
+    flex: 1;
+}
+
+.workspace-rename input[type="text"] {
+    flex: 1;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+button {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    background: var(--hover-tint);
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.empty {
+    color: var(--muted);
+}
+
+main:has(.board-columns) {
+    max-width: none;
+}
+
+.board-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.back-link {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.back-link:hover {
+    color: var(--accent);
+}
+
+.board-columns {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    align-items: flex-start;
+}
+
+.board-column {
+    flex: 0 0 16rem;
+    background: var(--column-bg);
+    border-radius: 6px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: calc(100vh - 8rem);
+}
+
+.board-column-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.25rem 0.25rem 0;
+    color: var(--text);
+}
+
+.board-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    overflow-y: auto;
+}
+
+.board-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.5rem 0.6rem;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    font-size: 0.9rem;
+}
+
+.board-add-card input[type="text"] {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    background: transparent;
+    font-size: 0.9rem;
+}
+
+.board-add-card input[type="text"]:focus {
+    background: var(--surface);
+    border-style: solid;
+    outline: none;
+    border-color: var(--accent);
+}
+
+.workspace-open {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.workspace-open:hover {
+    background: var(--hover-tint);
+}
+
+.board-card-link {
+    display: block;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.board-card-link:hover {
+    color: var(--accent);
+}
+
+.report-header {
+    margin-bottom: 1rem;
+}
+
+.report-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.report-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+}
+
+.report-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.report-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.report-field-tags {
+    flex: 1;
+    min-width: 16rem;
+}
+
+.report-field input,
+.report-field select {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    font-size: 0.95rem;
+}
+
+.report-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+button.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+button.primary:hover:not(:disabled) {
+    filter: brightness(0.92);
+}
+
+.report-timestamps {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.report-delete-form {
+    margin-top: 2rem;
+}
+
+.delete-button {
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+}
+
+.delete-button:hover {
+    background: var(--danger-hover-bg);
+}
+
+.report-attachment-upload {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.report-attach-hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.report-checklist-section {
+    margin-top: 1.5rem;
+}
+
+.report-checklist-section h2 {
+    font-size: 1.05rem;
+    margin: 0 0 0.5rem;
+}
+
+.checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+}
+
+.checklist-item form {
+    display: contents;
+    margin: 0;
+}
+
+.checklist-text {
+    flex: 1;
+}
+
+.checklist-text.done {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+.checklist-delete-btn {
+    background: transparent;
+    color: var(--muted);
+    border-color: transparent;
+    padding: 0 0.4rem;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.checklist-delete-btn:hover {
+    color: var(--danger-text);
+    background: var(--danger-hover-bg);
+}
+
+.checklist-add input[type="text"] {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    background: transparent;
+    font-size: 0.9rem;
+}
+
+.checklist-add input[type="text"]:focus {
+    background: var(--surface);
+    border-style: solid;
+    outline: none;
+    border-color: var(--accent);
+}

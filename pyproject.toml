@@ -1,0 +1,17 @@
+[project]
+name = "reportboard"
+version = "0.1.0"
+description = "Local-only kanban-style report board"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1",
+    "markdown>=3.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

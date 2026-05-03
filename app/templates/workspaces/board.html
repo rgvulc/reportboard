@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ workspace.name }} — Reportboard{% endblock %}
+
+{% block content %}
+<div class="board-header">
+    <a class="back-link" href="{{ url_for('workspaces.index') }}">← Workspaces</a>
+    <h1>{{ workspace.name }}</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flashes">
+            {% for category, msg in messages %}
+                <li class="flash flash-{{ category }}">{{ msg }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<div class="board-columns">
+    {% for board in boards %}
+        <section class="board-column" data-board-id="{{ board.id }}">
+            <h2 class="board-column-title">{{ board.name }}</h2>
+            <ul class="board-cards">
+                {% for report in reports_by_board[board.id] %}
+                    <li class="board-card" data-report-id="{{ report.id }}">
+                        <a class="board-card-link" href="{{ url_for('reports.detail', report_id=report.id) }}">{{ report.title }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+            <form method="post" action="{{ url_for('reports.create', workspace_id=workspace.id) }}" class="board-add-card">
+                <input type="hidden" name="board_id" value="{{ board.id }}">
+                <input type="text" name="title" placeholder="+ New report" required>
+            </form>
+        </section>
+    {% endfor %}
+</div>
+{% endblock %}

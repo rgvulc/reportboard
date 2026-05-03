@@ -1,0 +1,26 @@
+<ul id="checklist" class="checklist" data-report-id="{{ report_id }}"
+    data-reorder-url="{{ url_for('checklist.reorder', report_id=report_id) }}">
+    {% for item in items %}
+        <li class="checklist-item" data-id="{{ item.id }}">
+            <form hx-post="{{ url_for('checklist.toggle', item_id=item.id) }}"
+                  hx-target="#checklist" hx-swap="outerHTML"
+                  class="checklist-toggle-form">
+                <input type="checkbox" {% if item.done %}checked{% endif %}
+                       onchange="this.form.requestSubmit()">
+            </form>
+            <span class="checklist-text {% if item.done %}done{% endif %}">{{ item.text }}</span>
+            <form hx-post="{{ url_for('checklist.delete', item_id=item.id) }}"
+                  hx-target="#checklist" hx-swap="outerHTML"
+                  class="checklist-delete-form">
+                <button type="submit" class="checklist-delete-btn" title="Delete">×</button>
+            </form>
+        </li>
+    {% endfor %}
+    <li class="checklist-add">
+        <form hx-post="{{ url_for('checklist.add', report_id=report_id) }}"
+              hx-target="#checklist" hx-swap="outerHTML"
+              class="checklist-add-form">
+            <input type="text" name="text" placeholder="+ Add checklist item" required autocomplete="off">
+        </form>
+    </li>
+</ul>
