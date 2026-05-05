@@ -564,3 +564,22 @@ button.primary:hover:not(:disabled) {
     outline: none;
     border-color: var(--accent);
 }
+
+.settings-export-link {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.settings-export-link:hover {
+    background: var(--surface);
+}
+
+.settings-import {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}

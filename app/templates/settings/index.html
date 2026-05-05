@@ -69,4 +69,25 @@
     'Importance levels are assignable to any report.',
     importance_levels, importance_counts, 'importance', 'importance_ids'
 ) }}
+
+<section class="settings-section">
+    <h2>Backup</h2>
+    <p class="settings-description">
+        Export the entire database to a zip of markdown files.
+        Importing replaces all existing data.
+    </p>
+
+    <p>
+        <a class="settings-export-link" href="{{ url_for('backup.export') }}">
+            Download backup
+        </a>
+    </p>
+
+    <form method="post" action="{{ url_for('backup.import_') }}"
+          enctype="multipart/form-data" class="settings-import"
+          onsubmit="return confirm('Importing will REPLACE all existing data. Continue?');">
+        <input type="file" name="archive" accept=".zip" required>
+        <button type="submit" class="delete-button">Replace from zip</button>
+    </form>
+</section>
 {% endblock %}

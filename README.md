@@ -15,7 +15,7 @@ levels.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install flask markdown pytest
+.venv/bin/pip install flask markdown pyyaml pytest
 .venv/bin/flask --app app init-db
 ```
 
@@ -50,6 +50,9 @@ app/
   schema.sql         # CREATE TABLE statements
   seed.sql           # Default boards and importance levels
   attachments.py     # File storage + cleanup helpers (pure + IO functions)
+  exporter.py        # DB → folder/zip of markdown files
+  importer.py        # Zip → DB (replace mode, validates first)
+  cli.py             # export-backup / import-backup commands
   routes/            # Blueprints
     workspaces.py
     reports.py
@@ -57,6 +60,7 @@ app/
     checklist.py
     settings.py
     tags.py
+    backup.py
   templates/         # Jinja templates
   static/
     css/app.css      # All styles, light + dark via prefers-color-scheme
@@ -76,6 +80,29 @@ pyproject.toml       # Package metadata
 rm -rf data/reportboard.db data/attachments
 .venv/bin/flask --app app init-db
 ```
+
+## Backup and restore
+
+The Settings page has a Backup section with a download button and an
+upload form. Equivalent CLI commands:
+
+```bash
+.venv/bin/flask --app app export-backup path/to/backup.zip
+.venv/bin/flask --app app import-backup path/to/backup.zip
+```
+
+Import is destructive: it replaces every workspace, report, board,
+importance level, tag, checklist item, and attachment with the contents
+of the archive. The importer validates the entire archive before touching
+the live database, so a malformed zip leaves existing data untouched.
+
+The archive is a zip of markdown files: one `report.md` per report (with
+YAML frontmatter for tags, checklist, and attachment metadata), grouped
+under `workspaces/<ws>/<board>/<report>/`, with attachment binaries under
+each report's `attachments/` subdirectory. A top-level `manifest.json`
+records boards, importance levels, tags, and workspace order. Attachment
+URLs in the body are stored relative to the report directory and rewritten
+back to absolute form on import.
 
 ## Notes
 
