@@ -600,6 +600,79 @@ button.primary:hover:not(:disabled) {
 }
 
 /* ============================================================
+ *  Form controls — make sure native inputs follow the theme
+ * ============================================================ */
+
+input, select, textarea {
+    color: var(--text);
+    font-family: inherit;
+}
+
+select option {
+    color: var(--text);
+    background: var(--surface);
+}
+
+input::placeholder, textarea::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+}
+
+/* ============================================================
+ *  EasyMDE / CodeMirror overrides — replace vendor's hardcoded
+ *  light colors with theme variables.
+ * ============================================================ */
+
+.EasyMDEContainer .CodeMirror,
+.EasyMDEContainer .CodeMirror-fullscreen,
+.editor-preview,
+.editor-preview-side {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.EasyMDEContainer .CodeMirror-cursor {
+    border-left-color: var(--text);
+}
+
+.EasyMDEContainer .CodeMirror-selected,
+.EasyMDEContainer .CodeMirror-focused .CodeMirror-selected {
+    background: var(--ghost-bg);
+}
+
+.editor-toolbar {
+    border-color: var(--border);
+    background: var(--surface);
+}
+
+.editor-toolbar button,
+.editor-toolbar a {
+    color: var(--text) !important;
+}
+
+.editor-toolbar button:hover,
+.editor-toolbar button.active {
+    background: var(--hover-tint);
+    border-color: var(--border);
+}
+
+.editor-toolbar i.separator {
+    border-left-color: var(--border);
+    border-right-color: var(--surface);
+}
+
+.editor-statusbar {
+    color: var(--muted);
+}
+
+.editor-preview pre,
+.editor-preview code {
+    background: var(--column-bg);
+    color: var(--text);
+}
+
+/* ============================================================
  *  Theme switcher (always visible, top-right)
  * ============================================================ */
 

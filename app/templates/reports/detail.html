@@ -110,6 +110,9 @@ document.addEventListener('DOMContentLoaded', function () {
         },
     });
 
+    // Open in preview mode; the toolbar's eye toggle drops back to edit.
+    easyMDE.togglePreview();
+
     const fileInput = document.getElementById('attachment-file-input');
     fileInput.addEventListener('change', function () {
         const file = fileInput.files[0];
