@@ -293,8 +293,10 @@ button {
     padding: 0.3rem 0.7rem;
     border: 1px solid var(--border);
     background: var(--surface);
+    color: var(--text);
     border-radius: var(--radius);
     cursor: pointer;
+    font-family: inherit;
 }
 
 button:hover:not(:disabled) {
@@ -605,6 +607,7 @@ button.primary:hover:not(:disabled) {
 
 input, select, textarea {
     color: var(--text);
+    background: var(--surface);
     font-family: inherit;
 }
 
