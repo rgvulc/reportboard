@@ -1065,3 +1065,113 @@ input::placeholder, textarea::placeholder {
     font-weight: 600;
     letter-spacing: -0.015em;
 }
+
+/* ============================================================
+ *  Board filter (Filter button + panel)
+ * ============================================================ */
+
+.filter-toggle {
+    position: relative;
+    margin-left: auto;
+}
+
+.filter-toggle.has-active-filter::after {
+    content: "";
+    position: absolute;
+    top: 0.2rem;
+    right: 0.2rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.filter-panel[hidden] {
+    display: none;
+}
+
+.filter-section {
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.filter-section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.filter-section-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.filter-section-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.25rem;
+}
+
+.filter-section-actions button {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.filter-tag-search {
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.filter-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.filter-tag-list {
+    max-height: 18rem;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.filter-checkbox.filter-hidden {
+    display: none;
+}
+
+.filter-summary {
+    flex: 1 1 100%;
+    color: var(--muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.board-card.filter-hidden {
+    display: none;
+}
