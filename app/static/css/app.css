@@ -777,6 +777,79 @@ input::placeholder, textarea::placeholder {
 }
 
 /* ============================================================
+ *  Profile: Terminal 2 — like terminal, but every color derives
+ *  from a single (--base-hue, --base-sat) pair, so swapping the
+ *  hue re-skins the whole theme.
+ * ============================================================ */
+
+:root[data-theme="terminal2"] {
+    --base-hue: 35;     /* amber default */
+    --base-sat: 90%;
+
+    --bg:         hsl(var(--base-hue),  25%,  4%);
+    --surface:    hsl(var(--base-hue),  25%,  7%);
+    --border:     hsl(var(--base-hue),  45%, 24%);
+    --text:       hsl(var(--base-hue), var(--base-sat), 62%);
+    --muted:      hsl(var(--base-hue),  35%, 45%);
+    --accent:     hsl(var(--base-hue),  95%, 72%);
+    --accent-fg:  hsl(var(--base-hue),  30%,  6%);
+    --column-bg:  hsl(var(--base-hue),  25%,  6%);
+    --hover-tint: hsl(var(--base-hue),  45%, 16%);
+    --ghost-bg:   hsl(var(--base-hue),  45%, 16%);
+
+    /* Errors keep a red identity regardless of base hue. */
+    --error-bg:        hsl(0, 40%, 12%);
+    --error-text:      hsl(0, 80%, 75%);
+    --error-border:    hsl(0, 40%, 28%);
+    --danger-text:     hsl(0, 80%, 70%);
+    --danger-border:   hsl(0, 40%, 28%);
+    --danger-hover-bg: hsl(0, 40%, 12%);
+
+    --font-body: "JetBrains Mono", "Fira Code", "SF Mono", "Menlo", "Consolas", monospace;
+    --font-heading: var(--font-body);
+    --radius: 0;
+    --radius-lg: 0;
+    --card-shadow: none;
+}
+
+:root[data-theme="terminal2"] body {
+    text-shadow: 0 0 1px hsla(var(--base-hue), var(--base-sat), 60%, 0.3);
+}
+
+:root[data-theme="terminal2"] h1::before,
+:root[data-theme="terminal2"] h2::before {
+    content: "[ ";
+    color: var(--muted);
+}
+
+:root[data-theme="terminal2"] h1::after,
+:root[data-theme="terminal2"] h2::after {
+    content: " ]";
+    color: var(--muted);
+}
+
+:root[data-theme="terminal2"] .board-card {
+    box-shadow: none;
+}
+
+:root[data-theme="terminal2"] .board-card:hover {
+    border-color: var(--accent);
+}
+
+:root[data-theme="terminal2"] button.primary {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+:root[data-theme="terminal2"] .settings-link,
+:root[data-theme="terminal2"] .workspace-open {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.8rem;
+}
+
+/* ============================================================
  *  Profile: Paper — serif, off-white, generous spacing
  * ============================================================ */
 
