@@ -72,6 +72,29 @@
         });
     }
 
+    function initThemeSwitcher() {
+        var select = document.getElementById('theme-select');
+        if (!select || select._themeInitialized) return;
+        select._themeInitialized = true;
+
+        var current = 'default';
+        try { current = localStorage.getItem('theme') || 'default'; } catch (e) {}
+        select.value = current;
+
+        select.addEventListener('change', function () {
+            var v = select.value;
+            try {
+                if (v === 'default') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.removeItem('theme');
+                } else {
+                    document.documentElement.setAttribute('data-theme', v);
+                    localStorage.setItem('theme', v);
+                }
+            } catch (e) { console.error(e); }
+        });
+    }
+
     function initChecklistSortable() {
         var list = document.getElementById('checklist');
         if (!list || list._sortableInitialized) return;
@@ -92,6 +115,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        initThemeSwitcher();
         initBoardSortables();
         initWorkspaceSortable();
         initSettingsSortables();

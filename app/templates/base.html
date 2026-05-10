@@ -4,10 +4,30 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Reportboard{% endblock %}</title>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t && t !== 'default') {
+                    document.documentElement.setAttribute('data-theme', t);
+                }
+            } catch (e) { /* localStorage may be unavailable */ }
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/easymde.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
+    <nav class="theme-switcher" aria-label="Theme">
+        <label for="theme-select">Theme</label>
+        <select id="theme-select">
+            <option value="default">Default</option>
+            <option value="terminal">Terminal</option>
+            <option value="paper">Paper</option>
+            <option value="compact">Compact</option>
+            <option value="cardstack">Cardstack</option>
+        </select>
+    </nav>
     <main>
         {% block content %}{% endblock %}
     </main>

@@ -11,3 +11,5 @@ data/attachments/
 
 instance/
 *.egg-info/
+
+example*
