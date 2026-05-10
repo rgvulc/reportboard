@@ -30,7 +30,14 @@ Medium, High).
 .venv/bin/python run.py
 ```
 
-Then open http://127.0.0.1:5000.
+Then open http://127.0.0.1:5000. Can also run 
+
+```bash
+.venv/bin/flask --app app run --host=0.0.0.0 --port=5000 --debug
+```
+
+to make available outside the VM.
+
 
 ## Testing
 
