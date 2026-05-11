@@ -338,6 +338,7 @@ main:has(.board-columns) {
     overflow-x: auto;
     padding-bottom: 0.5rem;
     align-items: flex-start;
+    justify-content: safe center;
 }
 
 .board-column {
