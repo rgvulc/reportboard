@@ -676,6 +676,15 @@ input::placeholder, textarea::placeholder {
     color: var(--text);
 }
 
+/* Vendor CSS sets editor-mode h1 at 200% / h2 at 160% — scale them down so
+ * H1 isn't enormous. Selector mirrors easymde.min.css for specificity. */
+.EasyMDEContainer .CodeMirror-line .cm-header-1 { font-size: 1.6em; line-height: 1.4; }
+.EasyMDEContainer .CodeMirror-line .cm-header-2 { font-size: 1.4em; line-height: 1.4; }
+.EasyMDEContainer .CodeMirror-line .cm-header-3 { font-size: 1.2em; line-height: 1.4; }
+.EasyMDEContainer .CodeMirror-line .cm-header-4 { font-size: 1.1em; line-height: 1.4; }
+.EasyMDEContainer .CodeMirror-line .cm-header-5,
+.EasyMDEContainer .CodeMirror-line .cm-header-6 { font-size: 1em; line-height: 1.4; }
+
 /* ============================================================
  *  Theme switcher (always visible, top-right)
  * ============================================================ */

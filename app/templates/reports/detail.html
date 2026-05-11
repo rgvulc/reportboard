@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
         autoDownloadFontAwesome: false,
         status: false,
         uploadImage: true,
+        previewImagesInEditor: true,
         imageUploadFunction: function (file, onSuccess, onError) {
             uploadFile(file)
                 .then(function (data) { onSuccess(data.url); })
