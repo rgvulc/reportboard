@@ -54,7 +54,7 @@ def test_get_report_renders_title_content_board_importance_tags(client, app):
         f"/reports/{report_id}",
         data={
             "title": "MyTitle",
-            "board_id": _board_id(app, "Done"),
+            "board_id": _board_id(app, "Complete"),
             "importance_id": _importance_id(app, "High"),
             "tags": "alpha, beta",
             "content": "Some **markdown** text",
@@ -66,7 +66,7 @@ def test_get_report_renders_title_content_board_importance_tags(client, app):
     assert "Some **markdown** text" in body
     assert "alpha" in body and "beta" in body
     # The selected board option should be marked selected
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
     assert f'value="{done_id}" selected' in body
     high_id = _importance_id(app, "High")
     assert f'value="{high_id}" selected' in body
@@ -81,7 +81,7 @@ def test_save_updates_fields_and_bumps_updated_at_only(client, app):
     _, todo_id, report_id = _setup(client, app)
     before = _get_report(app, report_id)
 
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
     high_id = _importance_id(app, "High")
 
     response = client.post(

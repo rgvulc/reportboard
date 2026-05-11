@@ -36,14 +36,9 @@ def test_seed_inserts_default_boards_in_order(app):
         ).fetchall()
 
     expected = [
-        ("To Organize", 0),
+        ("Todo", 0),
         ("In Progress", 1),
-        ("Todo", 2),
-        ("On Hold", 3),
-        ("On Deck", 4),
-        ("Backlog", 5),
-        ("Abandoned", 6),
-        ("Done", 7),
+        ("Complete", 2),
     ]
     assert [(r["name"], r["position"]) for r in rows] == expected
 
@@ -54,7 +49,13 @@ def test_seed_inserts_default_importance_levels(app):
             "SELECT name, position FROM importance_level ORDER BY position"
         ).fetchall()
 
-    expected = [("Low", 0), ("Medium", 1), ("High", 2)]
+    expected = [
+        ("Low", 0),
+        ("Medium", 1),
+        ("High", 2),
+        ("Backlog", 3),
+        ("Abandoned", 4),
+    ]
     assert [(r["name"], r["position"]) for r in rows] == expected
 
 

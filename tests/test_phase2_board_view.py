@@ -2,14 +2,9 @@ from app.db import get_db
 
 
 BOARDS_IN_ORDER = [
-    "To Organize",
-    "In Progress",
     "Todo",
-    "On Hold",
-    "On Deck",
-    "Backlog",
-    "Abandoned",
-    "Done",
+    "In Progress",
+    "Complete",
 ]
 
 
@@ -85,7 +80,7 @@ def test_first_report_in_a_column_gets_position_zero(client, app):
     _create_workspace(client, "WS")
     ws_id = _workspace_id(app, "WS")
     todo_id = _board_id(app, "Todo")
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
 
     _create_report(client, ws_id, todo_id, "InTodo")
     _create_report(client, ws_id, done_id, "InDone")
@@ -104,7 +99,7 @@ def test_reports_render_in_their_own_column(client, app):
     _create_workspace(client, "WS")
     ws_id = _workspace_id(app, "WS")
     todo_id = _board_id(app, "Todo")
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
 
     _create_report(client, ws_id, todo_id, "WidgetA")
     _create_report(client, ws_id, done_id, "WidgetZ")
@@ -112,11 +107,11 @@ def test_reports_render_in_their_own_column(client, app):
     body = client.get(f"/workspaces/{ws_id}").get_data(as_text=True)
 
     todo_pos = body.index(">Todo<")
-    on_hold_pos = body.index(">On Hold<")
+    next_col_pos = body.index(">In Progress<")
     widget_a_pos = body.index("WidgetA")
-    assert todo_pos < widget_a_pos < on_hold_pos
+    assert todo_pos < widget_a_pos < next_col_pos
 
-    done_pos = body.index(">Done<")
+    done_pos = body.index(">Complete<")
     widget_z_pos = body.index("WidgetZ")
     assert done_pos < widget_z_pos
 

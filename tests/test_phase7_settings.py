@@ -51,9 +51,9 @@ def test_get_settings_page_renders_boards_and_importance(client):
     body = client.get("/settings").get_data(as_text=True)
     assert body.count("Boards") >= 1
     assert "Importance" in body
-    for name in ["Todo", "In Progress", "Done", "On Hold"]:
+    for name in ["Todo", "In Progress", "Complete"]:
         assert name in body
-    for name in ["Low", "Medium", "High"]:
+    for name in ["Low", "Medium", "High", "Backlog", "Abandoned"]:
         assert name in body
 
 
@@ -116,7 +116,7 @@ def test_rename_board_to_duplicate_returns_400(client, app):
     todo_id = next(b["id"] for b in _all_boards(app) if b["name"] == "Todo")
     response = client.post(
         f"/settings/boards/{todo_id}/rename",
-        data={"name": "Done"},
+        data={"name": "Complete"},
     )
     assert response.status_code == 400
 
@@ -138,12 +138,14 @@ def test_rename_unknown_board_returns_404(client):
 
 
 def test_delete_empty_board_succeeds(client, app):
-    to_organize_id = next(
-        b["id"] for b in _all_boards(app) if b["name"] == "To Organize"
+    # Add a fresh board so the test isn't coupled to which boards are seeded.
+    client.post("/settings/boards", data={"name": "Throwaway"})
+    target_id = next(
+        b["id"] for b in _all_boards(app) if b["name"] == "Throwaway"
     )
-    response = client.post(f"/settings/boards/{to_organize_id}/delete")
+    response = client.post(f"/settings/boards/{target_id}/delete")
     assert response.status_code in (200, 302)
-    assert all(b["id"] != to_organize_id for b in _all_boards(app))
+    assert all(b["id"] != target_id for b in _all_boards(app))
 
 
 def test_delete_board_with_reports_is_rejected_and_state_unchanged(client, app):

@@ -15,7 +15,7 @@ def _seed_board_with_mix(app):
                 "SELECT id FROM board WHERE name='Todo'"
             ).fetchone()["id"]
             done_id = db.execute(
-                "SELECT id FROM board WHERE name='Done'"
+                "SELECT id FROM board WHERE name='Complete'"
             ).fetchone()["id"]
             high_id = db.execute(
                 "SELECT id FROM importance_level WHERE name='High'"

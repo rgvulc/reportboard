@@ -89,7 +89,7 @@ def test_move_to_end_of_same_column_clamps_oversized_position(client, app):
 def test_move_across_columns_renumbers_both_and_preserves_total(client, app):
     ws_id = _setup_workspace(client, app)
     todo_id = _board_id(app, "Todo")
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
     _create_reports(client, ws_id, todo_id, ["A", "B", "C"])
     _create_reports(client, ws_id, done_id, ["D", "E"])
 
@@ -100,7 +100,7 @@ def test_move_across_columns_renumbers_both_and_preserves_total(client, app):
     assert [(r["title"], r["position"]) for r in _column(app, ws_id, "Todo")] == [
         ("A", 0), ("C", 1),
     ]
-    assert [(r["title"], r["position"]) for r in _column(app, ws_id, "Done")] == [
+    assert [(r["title"], r["position"]) for r in _column(app, ws_id, "Complete")] == [
         ("D", 0), ("B", 1), ("E", 2),
     ]
 
@@ -114,7 +114,7 @@ def test_move_across_columns_renumbers_both_and_preserves_total(client, app):
 def test_move_across_columns_to_top(client, app):
     ws_id = _setup_workspace(client, app)
     todo_id = _board_id(app, "Todo")
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
     _create_reports(client, ws_id, todo_id, ["A"])
     _create_reports(client, ws_id, done_id, ["X", "Y"])
 
@@ -122,7 +122,7 @@ def test_move_across_columns_to_top(client, app):
     client.post(f"/reports/{a_id}/move", data={"board_id": done_id, "position": 0})
 
     assert _column(app, ws_id, "Todo") == []
-    assert [(r["title"], r["position"]) for r in _column(app, ws_id, "Done")] == [
+    assert [(r["title"], r["position"]) for r in _column(app, ws_id, "Complete")] == [
         ("A", 0), ("X", 1), ("Y", 2),
     ]
 
@@ -130,17 +130,17 @@ def test_move_across_columns_to_top(client, app):
 def test_move_replayed_is_idempotent(client, app):
     ws_id = _setup_workspace(client, app)
     todo_id = _board_id(app, "Todo")
-    done_id = _board_id(app, "Done")
+    done_id = _board_id(app, "Complete")
     _create_reports(client, ws_id, todo_id, ["A", "B"])
     _create_reports(client, ws_id, done_id, ["X"])
     b_id = next(r["id"] for r in _column(app, ws_id, "Todo") if r["title"] == "B")
 
     move_args = {"board_id": done_id, "position": 0}
     client.post(f"/reports/{b_id}/move", data=move_args)
-    snapshot_a = (_column(app, ws_id, "Todo"), _column(app, ws_id, "Done"))
+    snapshot_a = (_column(app, ws_id, "Todo"), _column(app, ws_id, "Complete"))
 
     client.post(f"/reports/{b_id}/move", data=move_args)
-    snapshot_b = (_column(app, ws_id, "Todo"), _column(app, ws_id, "Done"))
+    snapshot_b = (_column(app, ws_id, "Todo"), _column(app, ws_id, "Complete"))
 
     assert [
         [(r["title"], r["position"]) for r in col] for col in snapshot_a
