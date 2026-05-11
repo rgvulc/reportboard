@@ -114,7 +114,37 @@ back to absolute form on import.
 ## Notes
 
 - All third-party JS/CSS is vendored under `app/static/vendor/`. The app
-  works offline.
+  works offline. Vendored versions:
+
+```bash
+echo "htmx:" 
+curl -fsSL https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js | sha256sum
+cat app/static/vendor/htmx.min.js | sha256sum
+echo
+
+echo "easymde:"
+curl -fsSL https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js | sha256sum
+curl -fsSL https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css | sha256sum
+cat app/static/vendor/easymde.min.js | sha256sum
+cat app/static/vendor/easymde.min.css | sha256sum
+echo
+
+echo "sortable:"
+curl -fsSL https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js | sha256sum
+cat app/static/vendor/sortable.min.js | sha256sum
+echo
+
+echo "FontAwesome 4:"
+curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css | sha256sum
+curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff2 | sha256sum
+curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff | sha256sum
+curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.ttf | sha256sum
+cat app/static/vendor/font-awesome/css/font-awesome.min.css | sha256sum
+cat app/static/vendor/font-awesome/fonts/fontawesome-webfont.woff2 | sha256sum
+cat app/static/vendor/font-awesome/fonts/fontawesome-webfont.woff | sha256sum
+cat app/static/vendor/font-awesome/fonts/fontawesome-webfont.ttf | sha256sum
+```
+
 - Attachments live on disk under `data/attachments/<report_id>/<uuid>.<ext>`
   and are reference-counted by substring scan against the report's saved
   markdown. Saving a report deletes any attachment whose
