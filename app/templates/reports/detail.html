@@ -152,6 +152,43 @@ document.addEventListener('DOMContentLoaded', function () {
         quill.clipboard.dangerouslyPasteHTML(0, marked.parse(storedMD));
     }
 
+    // Auto-link bare https?:// URLs. Scans the whole document, skipping ranges
+    // that already have link formatting (idempotent). Trailing punctuation is
+    // trimmed so "Visit https://example.com." links the URL not the period.
+    const URL_RE = /https?:\/\/[^\s<>'"`]+/g;
+    function linkifyDocument() {
+        const text = quill.getText();
+        let m;
+        while ((m = URL_RE.exec(text)) !== null) {
+            let url = m[0];
+            while (url.length && /[.,;:!?)\]]$/.test(url)) {
+                url = url.slice(0, -1);
+            }
+            if (!url) continue;
+            const fmt = quill.getFormat(m.index, url.length);
+            if (!fmt.link) {
+                quill.formatText(m.index, url.length, 'link', url, 'silent');
+            }
+        }
+    }
+
+    // Once after hydration, in case the stored content has bare URLs.
+    linkifyDocument();
+
+    // On edits, only run when the user inserts a terminator or pastes multi-char
+    // content — avoids firing on every single keystroke.
+    quill.on('text-change', function (delta, _old, source) {
+        if (source !== 'user') return;
+        const ops = delta.ops || [];
+        for (const op of ops) {
+            if (typeof op.insert === 'string'
+                    && (op.insert.length > 1 || /[\s\n.,;:!?]/.test(op.insert))) {
+                linkifyDocument();
+                return;
+            }
+        }
+    });
+
     function insertImage(file) {
         return uploadFile(file).then(function (data) {
             const range = quill.getSelection(true) || { index: quill.getLength() };
@@ -227,6 +264,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     const form = document.querySelector('.report-form');
     form.addEventListener('submit', function () {
+        // Catch URLs typed without a trailing terminator.
+        linkifyDocument();
         const html = quill.getSemanticHTML();
         deltaTextarea.value = JSON.stringify(quill.getContents());
         htmlTextarea.value = html;
