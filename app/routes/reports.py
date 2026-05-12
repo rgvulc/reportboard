@@ -71,7 +71,8 @@ def detail(report_id: int):
     db = get_db()
     report = db.execute(
         "SELECT id, workspace_id, board_id, importance_id, title, content, "
-        "created_at, updated_at FROM report WHERE id = ?",
+        "content_delta, content_html, created_at, updated_at "
+        "FROM report WHERE id = ?",
         (report_id,),
     ).fetchone()
     if report is None:
@@ -149,13 +150,17 @@ def save(report_id: int):
             abort(400)
 
     content = request.form.get("content") or ""
+    content_delta = request.form.get("content_delta") or ""
+    content_html = request.form.get("content_html") or ""
     tag_names = _parse_tags(request.form.get("tags") or "")
 
     with db:
         db.execute(
             f"UPDATE report SET title = ?, board_id = ?, importance_id = ?, "
-            f"content = ?, updated_at = {NOW_SQL} WHERE id = ?",
-            (title, board_id, importance_id, content, report_id),
+            f"content = ?, content_delta = ?, content_html = ?, "
+            f"updated_at = {NOW_SQL} WHERE id = ?",
+            (title, board_id, importance_id, content,
+             content_delta, content_html, report_id),
         )
         db.execute("DELETE FROM report_tag WHERE report_id = ?", (report_id,))
         for name in tag_names:

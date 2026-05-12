@@ -1,10 +1,10 @@
 # Reportboard
 
 A local-only, single-user, kanban-style report board. Workspaces hold reports
-arranged in kanban columns; each report has markdown content, attachments, a
-checklist, tags, and an importance level. Drag-and-drop reorders cards,
-columns, workspaces, checklist items, board configurations, and importance
-levels.
+arranged in kanban columns; each report has rich-text content (edited in Quill),
+attachments, a checklist, tags, and an importance level. Drag-and-drop reorders
+cards, columns, workspaces, checklist items, board configurations, and
+importance levels.
 
 ## Requirements
 
@@ -72,7 +72,7 @@ app/
   static/
     css/app.css      # All styles, light + dark via prefers-color-scheme
     js/app.js        # SortableJS wiring (kanban, workspaces, settings, checklist)
-    vendor/          # htmx, easymde, sortablejs (vendored, no CDN)
+    vendor/          # htmx, quill, sortablejs, turndown, marked (vendored, no CDN)
 data/
   reportboard.db     # SQLite database (gitignored)
   attachments/<report_id>/   # per-report attachment storage (gitignored)
@@ -122,29 +122,37 @@ curl -fsSL https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js | sha256
 cat app/static/vendor/htmx.min.js | sha256sum
 echo
 
-echo "easymde:"
-curl -fsSL https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js | sha256sum
-curl -fsSL https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css | sha256sum
-cat app/static/vendor/easymde.min.js | sha256sum
-cat app/static/vendor/easymde.min.css | sha256sum
-echo
-
 echo "sortable:"
 curl -fsSL https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js | sha256sum
 cat app/static/vendor/sortable.min.js | sha256sum
 echo
 
-echo "FontAwesome 4:"
-curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css | sha256sum
-curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff2 | sha256sum
-curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff | sha256sum
-curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.ttf | sha256sum
-cat app/static/vendor/font-awesome/css/font-awesome.min.css | sha256sum
-cat app/static/vendor/font-awesome/fonts/fontawesome-webfont.woff2 | sha256sum
-cat app/static/vendor/font-awesome/fonts/fontawesome-webfont.woff | sha256sum
-cat app/static/vendor/font-awesome/fonts/fontawesome-webfont.ttf | sha256sum
+echo "quill:"
+curl -fsSL https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js | sha256sum
+curl -fsSL https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css | sha256sum
+cat app/static/vendor/quill/quill.js | sha256sum
+cat app/static/vendor/quill/quill.snow.css | sha256sum
+echo
+
+echo "turndown:"
+curl -fsSL https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js | sha256sum
+cat app/static/vendor/turndown.js | sha256sum
+echo
+
+echo "marked:"
+curl -fsSL https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js | sha256sum
+cat app/static/vendor/marked.min.js | sha256sum
 ```
 
+- Each report stores its body in three parallel forms in the `report` table:
+  `content_delta` (Quill's native JSON, lossless source of truth),
+  `content_html` (rendered form, easy to inspect), and `content` (markdown,
+  drives backup/export and the attachment-cleanup substring scan). The client
+  computes all three on save; the editor hydrates from Delta first, falling
+  back to HTML then markdown for content saved before this scheme existed.
+- For databases predating the triple-storage columns, run
+  `.venv/bin/flask --app app migrate-content-columns` once. It's a no-op on
+  fresh databases.
 - Attachments live on disk under `data/attachments/<report_id>/<uuid>.<ext>`
   and are reference-counted by substring scan against the report's saved
   markdown. Saving a report deletes any attachment whose

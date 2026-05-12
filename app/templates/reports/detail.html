@@ -3,6 +3,16 @@
 {% block title %}{{ report.title }} — Reportboard{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/quill/quill.snow.css') }}">
+<style>
+    #quill-editor { min-height: 320px; }
+    .ql-toolbar.ql-snow, .ql-container.ql-snow {
+        border-color: var(--border);
+    }
+    .ql-container { font-family: var(--font-body); font-size: 0.95rem; }
+    .ql-editor { min-height: 280px; }
+</style>
+
 <div class="report-header">
     <a class="back-link" href="{{ url_for('workspaces.view', workspace_id=workspace.id) }}">← {{ workspace.name }}</a>
 </div>
@@ -52,7 +62,12 @@
         </label>
     </div>
 
-    <textarea id="content" name="content">{{ report.content }}</textarea>
+    <div id="quill-editor"></div>
+    {# Three hidden inputs populated by the submit handler. `content` keeps the
+       same name the rest of the app expects (markdown form). #}
+    <textarea id="content"       name="content"       hidden>{{ report.content }}</textarea>
+    <textarea id="content-delta" name="content_delta" hidden>{{ report.content_delta }}</textarea>
+    <textarea id="content-html"  name="content_html"  hidden>{{ report.content_html }}</textarea>
 
     <div class="report-attachment-upload">
         <label class="report-field report-field-attach">
@@ -82,61 +97,140 @@
     <button type="submit" class="delete-button">Delete report</button>
 </form>
 
+<script src="{{ url_for('static', filename='vendor/quill/quill.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/turndown.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/marked.min.js') }}"></script>
 <script>
 window.UPLOAD_URL = "{{ url_for('attachments.upload', report_id=report.id) }}";
 
-document.addEventListener('DOMContentLoaded', function () {
-    function uploadFile(file) {
-        const fd = new FormData();
-        fd.append('file', file);
-        return fetch(window.UPLOAD_URL, { method: 'POST', body: fd })
-            .then(function (r) {
-                if (!r.ok) throw new Error('Upload failed: ' + r.status);
-                return r.json();
-            });
-    }
+function uploadFile(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fetch(window.UPLOAD_URL, { method: 'POST', body: fd })
+        .then(function (r) {
+            if (!r.ok) throw new Error('Upload failed: ' + r.status);
+            return r.json();
+        });
+}
 
-    const easyMDE = new EasyMDE({
-        element: document.getElementById('content'),
-        minHeight: '320px',
-        spellChecker: false,
-        autoDownloadFontAwesome: false,
-        status: false,
-        uploadImage: true,
-        previewImagesInEditor: true,
-        imageUploadFunction: function (file, onSuccess, onError) {
-            uploadFile(file)
-                .then(function (data) { onSuccess(data.url); })
-                .catch(function (err) { onError(err.message || String(err)); });
+document.addEventListener('DOMContentLoaded', function () {
+    const mdTextarea    = document.getElementById('content');
+    const deltaTextarea = document.getElementById('content-delta');
+    const htmlTextarea  = document.getElementById('content-html');
+
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: 'Start writing…',
+        modules: {
+            toolbar: [
+                [{ header: [1, 2, 3, false] }],
+                ['bold', 'italic', 'strike', 'code'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['blockquote', 'code-block'],
+                ['link', 'image'],
+                ['clean'],
+                ['table'],
+            ],
         },
     });
 
-    // Open in preview mode; the toolbar's eye toggle drops back to edit.
-    easyMDE.togglePreview();
+    // Hydration: prefer Delta (lossless) → HTML → markdown (legacy fallback).
+    const storedDelta = deltaTextarea.value.trim();
+    const storedHTML  = htmlTextarea.value.trim();
+    const storedMD    = mdTextarea.value;
+    if (storedDelta) {
+        try {
+            quill.setContents(JSON.parse(storedDelta), 'silent');
+        } catch (e) {
+            console.error('Bad stored Delta; falling back to HTML/markdown', e);
+            if (storedHTML) quill.clipboard.dangerouslyPasteHTML(0, storedHTML);
+            else if (storedMD) quill.clipboard.dangerouslyPasteHTML(0, marked.parse(storedMD));
+        }
+    } else if (storedHTML) {
+        quill.clipboard.dangerouslyPasteHTML(0, storedHTML);
+    } else if (storedMD.trim()) {
+        quill.clipboard.dangerouslyPasteHTML(0, marked.parse(storedMD));
+    }
 
-    // Cmd/Ctrl+E toggles between edit and preview. Bound at the document level
-    // because CodeMirror is hidden while preview is active and wouldn't receive
-    // the keypress otherwise.
-    document.addEventListener('keydown', function (e) {
-        if (e.key.toLowerCase() !== 'e') return;
-        if (!(e.metaKey || e.ctrlKey)) return;
-        if (e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        if (easyMDE.isSideBySideActive()) easyMDE.toggleSideBySide();
-        easyMDE.togglePreview();
+    function insertImage(file) {
+        return uploadFile(file).then(function (data) {
+            const range = quill.getSelection(true) || { index: quill.getLength() };
+            quill.insertEmbed(range.index, 'image', data.url, 'user');
+            quill.setSelection(range.index + 1, 'user');
+        }).catch(function (err) {
+            alert(err.message || String(err));
+        });
+    }
+
+    // Toolbar image button: upload to attachments, insert URL (not base64).
+    quill.getModule('toolbar').addHandler('image', function () {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function () {
+            if (input.files && input.files[0]) insertImage(input.files[0]);
+        };
+        input.click();
     });
 
+    // Intercept image paste — capture phase, before Quill's clipboard handler.
+    quill.root.addEventListener('paste', function (e) {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.type && item.type.indexOf('image') === 0) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const file = item.getAsFile();
+                if (file) insertImage(file);
+                return;
+            }
+        }
+    }, true);
+
+    // Same for drag-drop.
+    quill.root.addEventListener('drop', function (e) {
+        if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+        const file = e.dataTransfer.files[0];
+        if (!file.type || !file.type.startsWith('image/')) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        insertImage(file);
+    }, true);
+
+    // Generic file-attach button (any file type, not just images).
     const fileInput = document.getElementById('attachment-file-input');
     fileInput.addEventListener('change', function () {
         const file = fileInput.files[0];
         if (!file) return;
-        uploadFile(file)
-            .then(function (data) {
-                const cm = easyMDE.codemirror;
-                cm.replaceSelection(data.markdown_ref);
-                fileInput.value = '';
-            })
-            .catch(function (err) { alert(err.message || String(err)); });
+        uploadFile(file).then(function (data) {
+            const range = quill.getSelection(true) || { index: quill.getLength() };
+            if (data.is_image) {
+                quill.insertEmbed(range.index, 'image', data.url, 'user');
+                quill.setSelection(range.index + 1, 'user');
+            } else {
+                const label = data.original_name || 'attachment';
+                quill.insertText(range.index, label, { link: data.url }, 'user');
+                quill.setSelection(range.index + label.length, 'user');
+            }
+            fileInput.value = '';
+        }).catch(function (err) {
+            alert(err.message || String(err));
+        });
+    });
+
+    // On submit: compute all three forms and populate hidden inputs.
+    const turndown = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        bulletListMarker: '-',
+    });
+    const form = document.querySelector('.report-form');
+    form.addEventListener('submit', function () {
+        const html = quill.getSemanticHTML();
+        deltaTextarea.value = JSON.stringify(quill.getContents());
+        htmlTextarea.value = html;
+        mdTextarea.value = turndown.turndown(html);
     });
 });
 </script>

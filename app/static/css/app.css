@@ -419,6 +419,19 @@ main:has(.board-columns) {
 
 .report-header {
     margin-bottom: 1rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.report-editor-badge {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.report-editor-badge a {
+    color: var(--accent);
 }
 
 .report-form {
