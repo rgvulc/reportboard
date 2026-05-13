@@ -72,7 +72,8 @@ app/
   static/
     css/app.css      # All styles, light + dark via prefers-color-scheme
     js/app.js        # SortableJS wiring (kanban, workspaces, settings, checklist)
-    vendor/          # htmx, quill, sortablejs, turndown, marked (vendored, no CDN)
+    vendor/          # htmx, quill, sortablejs (vendored, no CDN)
+  delta_md.py        # Delta ↔ Markdown converter (server-side, lossless on safe subset)
 data/
   reportboard.db     # SQLite database (gitignored)
   attachments/<report_id>/   # per-report attachment storage (gitignored)
@@ -134,25 +135,22 @@ cat app/static/vendor/quill/quill.js | sha256sum
 cat app/static/vendor/quill/quill.snow.css | sha256sum
 echo
 
-echo "turndown:"
-curl -fsSL https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js | sha256sum
-cat app/static/vendor/turndown.js | sha256sum
-echo
-
-echo "marked:"
-curl -fsSL https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js | sha256sum
-cat app/static/vendor/marked.min.js | sha256sum
 ```
 
-- Each report stores its body in three parallel forms in the `report` table:
-  `content_delta` (Quill's native JSON, lossless source of truth),
-  `content_html` (rendered form, easy to inspect), and `content` (markdown,
-  drives backup/export and the attachment-cleanup substring scan). The client
-  computes all three on save; the editor hydrates from Delta first, falling
-  back to HTML then markdown for content saved before this scheme existed.
-- For databases predating the triple-storage columns, run
-  `.venv/bin/flask --app app migrate-content-columns` once. It's a no-op on
-  fresh databases.
+- Each report stores its body as **Quill Delta JSON only** in
+  `report.content_delta`. Markdown (for export) and HTML (for any future
+  read-only view) are derived on demand via `app/delta_md.py`. The editor
+  toolbar is restricted to a markdown-clean subset (bold/italic/strike/code/
+  link, headers, lists, blockquote, fenced code, link, image, video) and a
+  paste matcher strips any other attributes (color/font/alignment/etc.) so
+  the stored Delta stays in the round-trip-safe subset.
+- Video embeds are preserved through markdown via a sentinel link title:
+  `[video](URL "video-embed")`. `delta_md.md_to_delta` recognises the marker
+  and re-emits a video embed on import.
+- For databases predating the delta-only schema, run
+  `.venv/bin/flask --app app migrate-to-delta-only` once. It backfills
+  `content_delta` from legacy markdown and drops the obsolete columns.
+  No-op on a fresh database.
 - Attachments live on disk under `data/attachments/<report_id>/<uuid>.<ext>`
   and are reference-counted by substring scan against the report's saved
   markdown. Saving a report deletes any attachment whose

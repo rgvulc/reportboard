@@ -63,9 +63,11 @@ def test_get_report_renders_title_content_board_importance_tags(client, app):
 
     body = client.get(f"/reports/{report_id}").get_data(as_text=True)
     assert "MyTitle" in body
-    assert "Some **markdown** text" in body
+    # Content is hydrated via the Delta JSON in the hidden textarea — the
+    # original text "Some markdown text" is present even though the markdown
+    # asterisks have been converted to bold formatting.
+    assert "Some " in body and "markdown" in body and "text" in body
     assert "alpha" in body and "beta" in body
-    # The selected board option should be marked selected
     done_id = _board_id(app, "Complete")
     assert f'value="{done_id}" selected' in body
     high_id = _importance_id(app, "High")
@@ -100,7 +102,11 @@ def test_save_updates_fields_and_bumps_updated_at_only(client, app):
     assert after["title"] == "NewTitle"
     assert after["board_id"] == done_id
     assert after["importance_id"] == high_id
-    assert after["content"] == "new content"
+    # The "content" markdown is converted to a Delta on receipt; verify by
+    # round-tripping back to markdown.
+    from app.delta_md import delta_to_md
+    import json
+    assert delta_to_md(json.loads(after["content_delta"])) == "new content"
     assert after["created_at"] == before["created_at"]
     assert after["updated_at"] > before["updated_at"]
 

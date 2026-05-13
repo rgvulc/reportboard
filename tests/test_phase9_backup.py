@@ -12,6 +12,12 @@ import yaml
 
 from app import exporter, importer
 from app.db import get_db, init_db
+from app.delta_md import md_to_delta
+
+
+def _delta_json(md: str) -> str:
+    """Helper: build a canonical Delta JSON string from a markdown fixture."""
+    return json.dumps(md_to_delta(md), ensure_ascii=False)
 
 
 # --- Helpers ----------------------------------------------------------------
@@ -45,27 +51,31 @@ def _seed_complex(app):
             db.execute("INSERT INTO tag (id, name) VALUES (11, 'urgent')")
             db.execute("INSERT INTO tag (id, name) VALUES (12, 'orphan')")  # unreferenced
 
+            r100_delta = _delta_json(
+                "See screenshot: ![s](/attachments/100/abc.png) and notes."
+            )
+            r101_delta = _delta_json("")
+            r102_delta = _delta_json("plain")
             db.execute(
                 "INSERT INTO report (id, workspace_id, board_id, importance_id, "
-                "title, content, position, created_at, updated_at) "
-                "VALUES (100, 1, ?, ?, 'Buy milk', "
-                "'See screenshot: ![s](/attachments/100/abc.png) and notes.', "
+                "title, content_delta, position, created_at, updated_at) "
+                "VALUES (100, 1, ?, ?, 'Buy milk', ?, "
                 "0, '2026-01-05 09:00:00.000', '2026-01-06 09:00:00.000')",
-                (todo_id, high_id),
+                (todo_id, high_id, r100_delta),
             )
             db.execute(
                 "INSERT INTO report (id, workspace_id, board_id, importance_id, "
-                "title, content, position, created_at, updated_at) "
-                "VALUES (101, 1, ?, NULL, 'Empty report', '', 1, "
+                "title, content_delta, position, created_at, updated_at) "
+                "VALUES (101, 1, ?, NULL, 'Empty report', ?, 1, "
                 "'2026-01-05 09:00:00.000', '2026-01-06 09:00:00.000')",
-                (done_id,),
+                (done_id, r101_delta),
             )
             db.execute(
                 "INSERT INTO report (id, workspace_id, board_id, importance_id, "
-                "title, content, position, created_at, updated_at) "
-                "VALUES (102, 2, ?, NULL, 'Weird/title: foo', 'plain', 0, "
+                "title, content_delta, position, created_at, updated_at) "
+                "VALUES (102, 2, ?, NULL, 'Weird/title: foo', ?, 0, "
                 "'2026-01-05 09:00:00.000', '2026-01-06 09:00:00.000')",
-                (todo_id,),
+                (todo_id, r102_delta),
             )
 
             db.execute("INSERT INTO report_tag (report_id, tag_id) VALUES (100, 10)")
@@ -262,8 +272,8 @@ class TestRoundTrip:
                 get_db(), Path(app.config["ATTACHMENTS_DIR"]), zip_path
             )
             content = get_db().execute(
-                "SELECT content FROM report WHERE id = 100"
-            ).fetchone()["content"]
+                "SELECT content_delta FROM report WHERE id = 100"
+            ).fetchone()["content_delta"]
         assert "100/abc.png" in content
 
 

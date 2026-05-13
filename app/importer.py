@@ -19,6 +19,8 @@ from pathlib import Path
 
 import yaml
 
+from .delta_md import md_to_delta
+
 
 SUPPORTED_SCHEMA_VERSIONS = {1}
 
@@ -319,15 +321,17 @@ def apply(
                     importance_id_by_name[fm["importance"]]
                     if fm.get("importance") is not None else None
                 )
-                rebuilt_content = rewrite_urls_for_import(report.body, rid)
+                rebuilt_md = rewrite_urls_for_import(report.body, rid)
+                content_delta = json.dumps(md_to_delta(rebuilt_md),
+                                            ensure_ascii=False)
 
                 conn.execute(
                     "INSERT INTO report "
                     "(id, workspace_id, board_id, importance_id, title, "
-                    "content, position, created_at, updated_at) "
+                    "content_delta, position, created_at, updated_at) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (rid, meta["id"], board_id, importance_id, fm["title"],
-                     rebuilt_content, fm["position"],
+                     content_delta, fm["position"],
                      fm["created_at"], fm["updated_at"]),
                 )
 

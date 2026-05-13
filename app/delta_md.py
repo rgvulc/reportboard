@@ -299,7 +299,8 @@ _HEADING_RE = re.compile(r"^(#{1,6}) +(.*)$")
 _BULLET_RE = re.compile(r"^- (.*)$")
 _ORDERED_RE = re.compile(r"^\d+\. (.*)$")
 _BLOCKQUOTE_RE = re.compile(r"^> ?(.*)$")
-_IMAGE_BLOCK_RE = re.compile(r"^!\[\]\(([^)\s]+)\)\s*$")
+# Alt text is accepted but discarded — Quill's image embed has no alt slot.
+_IMAGE_BLOCK_RE = re.compile(r"^!\[[^\]]*\]\(([^)\s]+)\)\s*$")
 _VIDEO_BLOCK_RE = re.compile(r'^\[video\]\(([^)\s]+) "video-embed"\)\s*$')
 
 
@@ -390,8 +391,8 @@ def _parse_inline(text: str) -> list:
     i = 0
     n = len(text)
     while i < n:
-        # 1. Image:  ![](url)
-        m = re.match(r"!\[\]\(([^)\s]+)\)", text[i:])
+        # 1. Image:  ![alt](url) — alt text accepted but discarded.
+        m = re.match(r"!\[[^\]]*\]\(([^)\s]+)\)", text[i:])
         if m:
             result.append(("embed", {"image": m.group(1)}, {}))
             i += m.end()

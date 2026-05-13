@@ -21,20 +21,19 @@ CREATE TABLE workspace (
 );
 
 -- Reports (the core unit)
--- Content is stored in three parallel forms. `content_delta` is the canonical
--- editor state (Quill Delta JSON); `content_html` is its rendered form;
--- `content` is markdown (drives backup/export and the substring-match
--- attachment-cleanup invariant). The client computes all three on save.
--- On load, the editor prefers Delta, falls back to HTML, then to markdown.
+-- Content is stored as a Quill Delta (JSON) — the only canonical form.
+-- Markdown and HTML are derived on demand (export uses app.delta_md.delta_to_md;
+-- import uses app.delta_md.md_to_delta). The attachment-cleanup substring scan
+-- works on the Delta JSON directly because image embeds appear as
+--   {"insert":{"image":"/attachments/<id>/<file>"}}
+-- so "<id>/<file>" remains a literal substring.
 CREATE TABLE report (
     id             INTEGER PRIMARY KEY,
     workspace_id   INTEGER NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
     board_id       INTEGER NOT NULL REFERENCES board(id),
     importance_id  INTEGER REFERENCES importance_level(id),
     title          TEXT NOT NULL,
-    content        TEXT NOT NULL DEFAULT '',
     content_delta  TEXT NOT NULL DEFAULT '',
-    content_html   TEXT NOT NULL DEFAULT '',
     position       INTEGER NOT NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now')),
     updated_at     TIMESTAMP NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now'))

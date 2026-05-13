@@ -1,12 +1,35 @@
+import json
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from .. import attachments
 from ..db import get_db
+from ..delta_md import canonicalize_delta, md_to_delta
 
 
 bp = Blueprint("reports", __name__)
 
 NOW_SQL = "strftime('%Y-%m-%d %H:%M:%f', 'now')"
+
+
+def _normalize_content_delta(form) -> str:
+    """Pull the canonical Delta JSON out of the submitted form.
+
+    Accepts either `content_delta` (preferred — what the browser editor posts)
+    or `content` (markdown, kept as a backwards-compat path for tests / curl
+    submissions). Returns the canonicalised Delta as a JSON string.
+    """
+    raw = (form.get("content_delta") or "").strip()
+    if raw:
+        try:
+            return json.dumps(canonicalize_delta(json.loads(raw)),
+                              ensure_ascii=False, sort_keys=False)
+        except json.JSONDecodeError:
+            abort(400, description="content_delta is not valid JSON")
+    md = form.get("content") or ""
+    if not md:
+        return json.dumps({"ops": [{"insert": "\n"}]}, ensure_ascii=False)
+    return json.dumps(md_to_delta(md), ensure_ascii=False)
 
 
 def _parse_tags(raw: str) -> list[str]:
@@ -70,8 +93,8 @@ def create(workspace_id: int):
 def detail(report_id: int):
     db = get_db()
     report = db.execute(
-        "SELECT id, workspace_id, board_id, importance_id, title, content, "
-        "content_delta, content_html, created_at, updated_at "
+        "SELECT id, workspace_id, board_id, importance_id, title, "
+        "content_delta, created_at, updated_at "
         "FROM report WHERE id = ?",
         (report_id,),
     ).fetchone()
@@ -149,18 +172,14 @@ def save(report_id: int):
         ).fetchone() is None:
             abort(400)
 
-    content = request.form.get("content") or ""
-    content_delta = request.form.get("content_delta") or ""
-    content_html = request.form.get("content_html") or ""
+    content_delta = _normalize_content_delta(request.form)
     tag_names = _parse_tags(request.form.get("tags") or "")
 
     with db:
         db.execute(
             f"UPDATE report SET title = ?, board_id = ?, importance_id = ?, "
-            f"content = ?, content_delta = ?, content_html = ?, "
-            f"updated_at = {NOW_SQL} WHERE id = ?",
-            (title, board_id, importance_id, content,
-             content_delta, content_html, report_id),
+            f"content_delta = ?, updated_at = {NOW_SQL} WHERE id = ?",
+            (title, board_id, importance_id, content_delta, report_id),
         )
         db.execute("DELETE FROM report_tag WHERE report_id = ?", (report_id,))
         for name in tag_names:
@@ -175,8 +194,10 @@ def save(report_id: int):
             "SELECT filename FROM attachment WHERE report_id = ?",
             (report_id,),
         ).fetchall()
+        # Substring scan works on Delta JSON directly: an image embed appears
+        # as {"image":"/attachments/<id>/<file>"}, so "<id>/<file>" is present.
         orphan_filenames = attachments.find_unreferenced(
-            report_id, content, [r["filename"] for r in attachment_rows]
+            report_id, content_delta, [r["filename"] for r in attachment_rows]
         )
         if orphan_filenames:
             db.executemany(

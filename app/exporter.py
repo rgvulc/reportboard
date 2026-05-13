@@ -36,6 +36,8 @@ from pathlib import Path
 
 import yaml
 
+from .delta_md import delta_to_md
+
 
 SCHEMA_VERSION = 1
 
@@ -116,7 +118,10 @@ def render_report_md(
         "checklist": checklist,
         "attachments": attachments,
     }
-    body = rewrite_urls_for_export(report["content"], report["id"])
+    # Delta is canonical storage; render to markdown for the export.
+    delta_json = report.get("content_delta") or ""
+    markdown_body = delta_to_md(delta_json) if delta_json.strip() else ""
+    body = rewrite_urls_for_export(markdown_body, report["id"])
     yaml_text = yaml.safe_dump(
         frontmatter, sort_keys=False, allow_unicode=True, default_flow_style=False
     )
@@ -209,9 +214,9 @@ def write_workspace(
     )
 
     reports = conn.execute(
-        "SELECT id, workspace_id, board_id, importance_id, title, content, "
-        "position, created_at, updated_at FROM report WHERE workspace_id = ? "
-        "ORDER BY board_id, position, id",
+        "SELECT id, workspace_id, board_id, importance_id, title, "
+        "content_delta, position, created_at, updated_at FROM report "
+        "WHERE workspace_id = ? ORDER BY board_id, position, id",
         (workspace["id"],),
     ).fetchall()
 

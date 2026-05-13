@@ -40,37 +40,69 @@ def init_db_command() -> None:
     click.echo(f"Initialized database at {db_path}")
 
 
-@click.command("migrate-content-columns")
+@click.command("migrate-to-delta-only")
 @with_appcontext
-def migrate_content_columns_command() -> None:
-    """Add content_delta + content_html columns to an existing report table.
+def migrate_to_delta_only_command() -> None:
+    """Migrate the `report` table to single-column Delta storage.
 
-    No-op on a fresh schema (init-db already includes them). Use this on a
-    DB that was created before triple-format storage was introduced.
+    Handles every prior schema this project has shipped:
+      - legacy (only `content`)
+      - triple-storage (content + content_delta + content_html)
+      - already-migrated (only content_delta)
+
+    For rows missing a Delta, the legacy markdown `content` is parsed via
+    delta_md.md_to_delta and serialised as JSON. Then content + content_html
+    columns are dropped.
     """
+    import json as _json
+    from .delta_md import md_to_delta
+
     conn = get_db()
     existing = {row["name"] for row in conn.execute(
         "PRAGMA table_info(report)"
     )}
-    added = []
+
     if "content_delta" not in existing:
         conn.execute(
             "ALTER TABLE report ADD COLUMN content_delta TEXT NOT NULL DEFAULT ''"
         )
-        added.append("content_delta")
-    if "content_html" not in existing:
+
+    # Backfill content_delta from markdown content for any row missing it.
+    backfilled = 0
+    rows = conn.execute(
+        "SELECT id, content, content_delta FROM report"
+        if "content" in existing else
+        "SELECT id, content_delta FROM report"
+    ).fetchall()
+    for row in rows:
+        existing_delta = (row["content_delta"] or "").strip()
+        if existing_delta:
+            continue
+        md = row["content"] if "content" in row.keys() else ""
+        delta = md_to_delta(md or "")
         conn.execute(
-            "ALTER TABLE report ADD COLUMN content_html TEXT NOT NULL DEFAULT ''"
+            "UPDATE report SET content_delta = ? WHERE id = ?",
+            (_json.dumps(delta, ensure_ascii=False), row["id"]),
         )
-        added.append("content_html")
+        backfilled += 1
+
+    # Drop the now-redundant columns. SQLite 3.35+ supports DROP COLUMN.
+    dropped = []
+    if "content" in existing:
+        conn.execute("ALTER TABLE report DROP COLUMN content")
+        dropped.append("content")
+    if "content_html" in existing:
+        conn.execute("ALTER TABLE report DROP COLUMN content_html")
+        dropped.append("content_html")
+
     conn.commit()
-    if added:
-        click.echo(f"Added columns: {', '.join(added)}")
-    else:
-        click.echo("No new columns needed; schema already current.")
+    click.echo(
+        f"Backfilled {backfilled} row(s); dropped columns: "
+        f"{', '.join(dropped) if dropped else '(none)'}"
+    )
 
 
 def register(app) -> None:
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
-    app.cli.add_command(migrate_content_columns_command)
+    app.cli.add_command(migrate_to_delta_only_command)
