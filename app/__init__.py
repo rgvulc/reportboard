@@ -14,6 +14,11 @@ def create_app(test_config: dict | None = None) -> Flask:
         SECRET_KEY="dev",
         DATABASE=str(project_root / "data" / "reportboard.db"),
         ATTACHMENTS_DIR=str(project_root / "data" / "attachments"),
+        # Werkzeug 3 caps form-data parsed into memory at 500 KB by default.
+        # Reports now post Delta + HTML + markdown together, so a long report
+        # easily exceeds that. 16 MB is generous for text payloads.
+        MAX_FORM_MEMORY_SIZE=16 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=64 * 1024 * 1024,
     )
 
     if test_config is not None:
