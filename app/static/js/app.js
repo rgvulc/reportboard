@@ -271,7 +271,23 @@
 
     // After HTMX swaps the checklist fragment, the old <ul id="checklist"> is
     // replaced by a fresh node; re-init Sortable on the new node.
+    //
+    // When the swap was triggered by the "Add checklist item" form, also focus
+    // the new empty add input so the user can keep typing items without
+    // reaching for the mouse.
+    let _refocusChecklistAdd = false;
+    document.body.addEventListener('htmx:configRequest', function (evt) {
+        var elt = evt.detail && evt.detail.elt;
+        if (elt && elt.classList && elt.classList.contains('checklist-add-form')) {
+            _refocusChecklistAdd = true;
+        }
+    });
     document.body.addEventListener('htmx:afterSwap', function () {
         initChecklistSortable();
+        if (_refocusChecklistAdd) {
+            _refocusChecklistAdd = false;
+            var input = document.querySelector('.checklist-add input[name="text"]');
+            if (input) input.focus();
+        }
     });
 })();
