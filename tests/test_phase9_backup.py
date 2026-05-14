@@ -457,17 +457,23 @@ class TestAtomicity:
 # --- CLI --------------------------------------------------------------------
 
 class TestCli:
+    """Markdown-format CLI flow (--format=markdown)."""
+
     def test_export_then_import_via_cli(self, app, runner, tmp_path):
         _seed_complex(app)
         before = _snapshot(app)
 
         zip_path = tmp_path / "cli.zip"
-        result = runner.invoke(args=["export-backup", str(zip_path)])
+        result = runner.invoke(
+            args=["export-backup", str(zip_path), "--format=markdown"]
+        )
         assert result.exit_code == 0, result.output
         assert zip_path.exists()
 
         _wipe(app)
-        result = runner.invoke(args=["import-backup", str(zip_path), "--yes"])
+        result = runner.invoke(
+            args=["import-backup", str(zip_path), "--yes", "--format=markdown"]
+        )
         assert result.exit_code == 0, result.output
 
         assert _snapshot(app) == before
@@ -475,7 +481,7 @@ class TestCli:
     def test_import_cli_surfaces_validation_error(self, app, runner, tmp_path):
         zip_path = _make_zip(tmp_path, {"junk.txt": "x"})
         result = runner.invoke(
-            args=["import-backup", str(zip_path), "--yes"]
+            args=["import-backup", str(zip_path), "--yes", "--format=markdown"]
         )
         assert result.exit_code != 0
         assert "manifest" in result.output.lower()
@@ -520,12 +526,13 @@ class TestSlugCollisions:
 # --- HTTP routes ------------------------------------------------------------
 
 class TestRoutes:
+    """Markdown-format HTTP route flow."""
+
     def test_export_endpoint_returns_zip(self, client, app):
         _seed_complex(app)
-        resp = client.get("/settings/backup/export")
+        resp = client.get("/settings/backup/export-markdown")
         assert resp.status_code == 200
         assert resp.mimetype == "application/zip"
-        # The returned bytes are a real zip with manifest.json inside.
         with zipfile.ZipFile(io.BytesIO(resp.data)) as zf:
             assert "manifest.json" in zf.namelist()
 
@@ -537,7 +544,7 @@ class TestRoutes:
 
         _wipe(app)
         resp = client.post(
-            "/settings/backup/import",
+            "/settings/backup/import-markdown",
             data={"archive": (io.BytesIO(zip_bytes), "backup.zip")},
             content_type="multipart/form-data",
             follow_redirects=False,
@@ -547,7 +554,7 @@ class TestRoutes:
 
     def test_import_endpoint_rejects_missing_file(self, client):
         resp = client.post(
-            "/settings/backup/import",
+            "/settings/backup/import-markdown",
             data={},
             content_type="multipart/form-data",
         )
@@ -556,12 +563,10 @@ class TestRoutes:
     def test_import_endpoint_surfaces_validation_error(self, client, tmp_path):
         zip_path = _make_zip(tmp_path, {"junk.txt": "x"})
         resp = client.post(
-            "/settings/backup/import",
+            "/settings/backup/import-markdown",
             data={"archive": (io.BytesIO(zip_path.read_bytes()), "bad.zip")},
             content_type="multipart/form-data",
         )
-        # Same convention as the rest of the app: redirect body + 400.
         assert resp.status_code == 400
-        # Flash survives in the session; render the next page to read it.
         resp2 = client.get("/settings")
-        assert b"Import failed" in resp2.data
+        assert b"Markdown import failed" in resp2.data

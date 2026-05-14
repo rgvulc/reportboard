@@ -71,23 +71,46 @@
 ) }}
 
 <section class="settings-section">
-    <h2>Backup</h2>
+    <h2>Backup (JSON)</h2>
     <p class="settings-description">
-        Export the entire database to a zip of markdown files.
-        Importing replaces all existing data.
+        Lossless canonical format. Use this to migrate your data between
+        Reportboard installations or to keep a faithful backup.
     </p>
 
     <p>
-        <a class="settings-export-link" href="{{ url_for('backup.export') }}">
-            Download backup
+        <a class="settings-export-link" href="{{ url_for('backup.export_json') }}">
+            Download JSON backup
         </a>
     </p>
 
-    <form method="post" action="{{ url_for('backup.import_') }}"
+    <form method="post" action="{{ url_for('backup.import_json') }}"
           enctype="multipart/form-data" class="settings-import"
           onsubmit="return confirm('Importing will REPLACE all existing data. Continue?');">
         <input type="file" name="archive" accept=".zip" required>
-        <button type="submit" class="delete-button">Replace from zip</button>
+        <button type="submit" class="delete-button">Replace from JSON zip</button>
+    </form>
+</section>
+
+<section class="settings-section">
+    <h2>Backup (Markdown)</h2>
+    <p class="settings-description">
+        Human-readable markdown export. Useful for sharing or viewing
+        outside Reportboard. Lossy on round-trip — formatting outside the
+        markdown-safe subset is dropped. Prefer the JSON backup for
+        migration.
+    </p>
+
+    <p>
+        <a class="settings-export-link" href="{{ url_for('backup.export_markdown') }}">
+            Download markdown export
+        </a>
+    </p>
+
+    <form method="post" action="{{ url_for('backup.import_markdown') }}"
+          enctype="multipart/form-data" class="settings-import"
+          onsubmit="return confirm('Importing will REPLACE all existing data. Continue?');">
+        <input type="file" name="archive" accept=".zip" required>
+        <button type="submit" class="delete-button">Replace from markdown zip</button>
     </form>
 </section>
 {% endblock %}

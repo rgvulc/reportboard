@@ -57,9 +57,10 @@ app/
   schema.sql         # CREATE TABLE statements
   seed.sql           # Default boards and importance levels
   attachments.py     # File storage + cleanup helpers (pure + IO functions)
-  exporter.py        # DB → folder/zip of markdown files
-  importer.py        # Zip → DB (replace mode, validates first)
-  cli.py             # export-backup / import-backup commands
+  backup_json.py     # JSON-format backup: DB ↔ data.json (+ attachments/)
+  exporter.py        # Markdown-format export: DB → tree of .md files
+  importer.py        # Markdown-format import: tree of .md files → DB
+  cli.py             # export-backup / import-backup / verify-export
   routes/            # Blueprints
     workspaces.py
     reports.py
@@ -91,26 +92,60 @@ rm -rf data/reportboard.db data/attachments
 
 ## Backup and restore
 
-The Settings page has a Backup section with a download button and an
-upload form. Equivalent CLI commands:
+Two formats are supported. Both are exposed on the Settings page (Backup
+sections) and as CLI commands.
+
+### JSON (canonical, lossless — use this for migration)
 
 ```bash
 .venv/bin/flask --app app export-backup path/to/backup.zip
 .venv/bin/flask --app app import-backup path/to/backup.zip
 ```
 
-Import is destructive: it replaces every workspace, report, board,
-importance level, tag, checklist item, and attachment with the contents
-of the archive. The importer validates the entire archive before touching
-the live database, so a malformed zip leaves existing data untouched.
+The archive layout:
 
-The archive is a zip of markdown files: one `report.md` per report (with
-YAML frontmatter for tags, checklist, and attachment metadata), grouped
-under `workspaces/<ws>/<board>/<report>/`, with attachment binaries under
-each report's `attachments/` subdirectory. A top-level `manifest.json`
-records boards, importance levels, tags, and workspace order. Attachment
-URLs in the body are stored relative to the report directory and rewritten
-back to absolute form on import.
+```
+backup.zip
+├── data.json                            # entire DB as one nested JSON document
+└── attachments/<report_id>/<filename>   # binary attachments
+```
+
+`data.json` contains every workspace, report (with its Delta as a nested
+JSON object), tag, board, importance level, checklist item, and attachment
+metadata. Round-trip is byte-identical at the parsed-dict level.
+
+### Markdown (human-readable, lossy on round-trip — for sharing)
+
+```bash
+.venv/bin/flask --app app export-backup path/to/backup.zip --format=markdown
+.venv/bin/flask --app app import-backup path/to/backup.zip --format=markdown
+```
+
+One `report.md` per report (YAML frontmatter + markdown body, derived via
+`app/delta_md.py`), grouped under `workspaces/<ws>/<board>/<report>/`, with
+attachment binaries under each report's `attachments/` subdirectory. A
+top-level `manifest.json` records boards, importance levels, tags, and
+workspace order. Attachment URLs in the body are stored relative and
+rewritten back to absolute form on import. Round-trip is lossy for any
+Delta attribute outside the markdown-safe subset (color, font, alignment,
+etc.) — the editor's toolbar and paste matcher keep stored Deltas within
+that subset, so in practice round-trip is clean.
+
+### Verify a JSON export is lossless
+
+```bash
+.venv/bin/flask --app app verify-export path/to/backup.zip
+```
+
+For each report, runs `md_to_delta(delta_to_md(content_delta))` and
+canonical-diffs against the original. Reports any drift. Useful as a
+sanity check before relying on the markdown export, or to confirm that
+historical data is still in the safe subset.
+
+Import (either format) is destructive: it replaces every workspace,
+report, board, importance level, tag, checklist item, and attachment.
+The importer validates the entire archive before touching the live
+database, so a malformed zip leaves existing data untouched.
 
 ## Notes
 
