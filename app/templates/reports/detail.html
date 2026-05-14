@@ -39,6 +39,7 @@
     {% endif %}
 {% endwith %}
 
+<div class="report-layout">
 <form method="post" action="{{ url_for('reports.save', report_id=report.id) }}" class="report-form">
     <input type="text" name="title" value="{{ report.title }}" required class="report-title" spellcheck="false">
 
@@ -95,12 +96,15 @@
     </div>
 </form>
 
-<section class="report-checklist-section">
-    <h2>Checklist</h2>
-    {% with items=checklist_items, report_id=report.id %}
-        {% include "reports/_checklist.html" %}
-    {% endwith %}
-</section>
+<aside class="report-side">
+    <section class="report-checklist-section">
+        <h2>Checklist</h2>
+        {% with items=checklist_items, report_id=report.id %}
+            {% include "reports/_checklist.html" %}
+        {% endwith %}
+    </section>
+</aside>
+</div>
 
 <form method="post" action="{{ url_for('reports.delete', report_id=report.id) }}" class="report-delete-form"
       onsubmit="return confirm('Delete this report? This cannot be undone.');">

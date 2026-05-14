@@ -524,8 +524,31 @@ button.primary:hover:not(:disabled) {
     font-size: 0.85rem;
 }
 
+/* Widen the page enough that the editor keeps its original ~61rem inner
+ * width AND the checklist sits to its right. */
+main:has(.report-layout) {
+    max-width: 81.5rem;
+}
+
+.report-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 56rem) {
+    .report-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.report-side {
+    min-width: 0;
+}
+
 .report-checklist-section {
-    margin-top: 1.5rem;
+    margin-top: 0;
 }
 
 .report-checklist-section h2 {
