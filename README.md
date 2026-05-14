@@ -170,6 +170,13 @@ cat app/static/vendor/quill/quill.js | sha256sum
 cat app/static/vendor/quill/quill.snow.css | sha256sum
 echo
 
+echo "highlight.js:"
+curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js | sha256sum
+curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css | sha256sum
+cat app/static/vendor/highlight/highlight.min.js | sha256sum
+cat app/static/vendor/highlight/github-dark.min.css | sha256sum
+echo
+
 ```
 
 - Each report stores its body as **Quill Delta JSON only** in
