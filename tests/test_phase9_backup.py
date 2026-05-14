@@ -487,6 +487,92 @@ class TestCli:
         assert "manifest" in result.output.lower()
 
 
+# --- Flat workspace layout (schema_version 2) --------------------------------
+
+class TestFlatLayout:
+    def test_export_has_no_board_subfolders(self, app, tmp_path):
+        """v2 layout: reports live directly under workspaces/<ws>/, never
+        under an intermediate board folder."""
+        _seed_complex(app)
+        zip_path = _export_to_tmp(app, tmp_path)
+        with zipfile.ZipFile(zip_path) as zf:
+            names = zf.namelist()
+
+        # Every report.md is exactly three slashes deep:
+        # workspaces/<ws>/<report>/report.md
+        for n in names:
+            if n.endswith("/report.md"):
+                assert n.count("/") == 3, f"unexpected depth: {n!r}"
+
+        # No path component that's a known board name (case sensitive).
+        for n in names:
+            parts = n.split("/")
+            assert "Todo" not in parts, f"board folder leaked: {n!r}"
+            assert "Complete" not in parts, f"board folder leaked: {n!r}"
+
+    def test_manifest_schema_version_is_2(self, app, tmp_path):
+        _seed_complex(app)
+        zip_path = _export_to_tmp(app, tmp_path)
+        with zipfile.ZipFile(zip_path) as zf:
+            manifest = json.loads(zf.read("manifest.json"))
+        assert manifest["schema_version"] == 2
+
+    def test_legacy_v1_archive_still_imports(self, app, tmp_path):
+        """A pre-existing v1 export (board subfolders, schema_version=1) is
+        still importable so old backups don't break."""
+        # Hand-build a minimal v1 zip in the nested format.
+        v1_zip = tmp_path / "v1.zip"
+        manifest = {
+            "schema_version": 1,
+            "exported_at": "2026-01-01T00:00:00.000",
+            "boards": [{"id": 1, "name": "Todo", "position": 0}],
+            "importance_levels": [],
+            "tags": [],
+            "workspaces": [{
+                "id": 1, "name": "WS", "position": 0,
+                "created_at": "2026-01-01 00:00:00.000",
+                "updated_at": "2026-01-01 00:00:00.000",
+            }],
+        }
+        ws_meta = {
+            "id": 1, "name": "WS", "position": 0,
+            "created_at": "2026-01-01 00:00:00.000",
+            "updated_at": "2026-01-01 00:00:00.000",
+        }
+        report_md = (
+            "---\n"
+            "id: 1\n"
+            "board: Todo\n"
+            "importance: null\n"
+            "position: 0\n"
+            "title: Old report\n"
+            "created_at: '2026-01-01 00:00:00.000'\n"
+            "updated_at: '2026-01-01 00:00:00.000'\n"
+            "tags: []\n"
+            "checklist: []\n"
+            "attachments: []\n"
+            "---\n"
+            "Body content."
+        )
+        with zipfile.ZipFile(v1_zip, "w") as zf:
+            zf.writestr("manifest.json", json.dumps(manifest))
+            zf.writestr("workspaces/000-WS/_workspace.json",
+                        json.dumps(ws_meta))
+            # NB: the extra `Todo` board folder is what makes this v1.
+            zf.writestr("workspaces/000-WS/Todo/000-Old-report/report.md",
+                        report_md)
+
+        _wipe(app)
+        with app.app_context():
+            importer.import_from_zip(
+                get_db(), Path(app.config["ATTACHMENTS_DIR"]), v1_zip,
+            )
+            rows = list(get_db().execute(
+                "SELECT title FROM report"
+            ))
+        assert [r["title"] for r in rows] == ["Old report"]
+
+
 # --- Slug collisions --------------------------------------------------------
 
 class TestSlugCollisions:

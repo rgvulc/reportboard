@@ -121,15 +121,36 @@ metadata. Round-trip is byte-identical at the parsed-dict level.
 .venv/bin/flask --app app import-backup path/to/backup.zip --format=markdown
 ```
 
-One `report.md` per report (YAML frontmatter + markdown body, derived via
-`app/delta_md.py`), grouped under `workspaces/<ws>/<board>/<report>/`, with
-attachment binaries under each report's `attachments/` subdirectory. A
-top-level `manifest.json` records boards, importance levels, tags, and
-workspace order. Attachment URLs in the body are stored relative and
-rewritten back to absolute form on import. Round-trip is lossy for any
-Delta attribute outside the markdown-safe subset (color, font, alignment,
-etc.) — the editor's toolbar and paste matcher keep stored Deltas within
-that subset, so in practice round-trip is clean.
+Layout (schema_version 2):
+
+```
+backup.zip
+├── manifest.json
+└── workspaces/
+    └── <NNN>-<workspace-slug>/
+        ├── _workspace.json
+        └── <NNN>-<report-slug>/
+            ├── report.md                # YAML frontmatter + markdown body
+            └── attachments/<filename>
+```
+
+One `report.md` per report, derived via `app/delta_md.py`. Reports for
+**all boards** live directly under the workspace folder (no per-board
+subfolder); the board name is recorded in each report's frontmatter
+(`board: Todo`) and used on import to place the report in the correct
+column. Reports are numbered sequentially across the whole workspace in
+board-then-position order, so the filesystem listing matches the natural
+kanban reading order. The top-level `manifest.json` records boards,
+importance levels, tags, and workspace order.
+
+Attachment URLs in the body are stored relative and rewritten back to
+absolute form on import. Round-trip is lossy for any Delta attribute
+outside the markdown-safe subset (color, font, alignment, etc.) — the
+editor's toolbar and paste matcher keep stored Deltas within that subset,
+so in practice round-trip is clean.
+
+Legacy schema_version 1 archives (with per-board subfolders) are still
+accepted on import.
 
 ### Verify a JSON export is lossless
 

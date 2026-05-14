@@ -39,7 +39,10 @@ import yaml
 from .delta_md import delta_to_md
 
 
-SCHEMA_VERSION = 1
+# v2 (current): flat layout — each workspace dir contains _workspace.json and
+#               its report dirs directly. Board name lives in frontmatter only.
+# v1 (legacy):  ws_dir/<board_slug>/<report_dir>/. Importer still reads these.
+SCHEMA_VERSION = 2
 
 _SLUG_MAX_LEN = 60
 _SLUG_BAD_CHARS_RE = re.compile(r"[^a-zA-Z0-9._-]+")
@@ -213,16 +216,18 @@ def write_workspace(
         encoding="utf-8",
     )
 
+    # Ordered by board column then position-within-column so the filesystem
+    # listing matches the natural kanban reading order.
     reports = conn.execute(
-        "SELECT id, workspace_id, board_id, importance_id, title, "
-        "content_delta, position, created_at, updated_at FROM report "
-        "WHERE workspace_id = ? ORDER BY board_id, position, id",
+        "SELECT r.id, r.workspace_id, r.board_id, r.importance_id, r.title, "
+        "r.content_delta, r.position, r.created_at, r.updated_at "
+        "FROM report r JOIN board b ON b.id = r.board_id "
+        "WHERE r.workspace_id = ? "
+        "ORDER BY b.position, b.id, r.position, r.id",
         (workspace["id"],),
     ).fetchall()
 
-    board_dirs: dict[int, Path] = {}
-
-    for r in reports:
+    for idx, r in enumerate(reports):
         report = _row_to_dict(r)
         board_name = board_names[report["board_id"]]
         importance_name = (
@@ -230,18 +235,11 @@ def write_workspace(
             if report["importance_id"] is not None else None
         )
 
-        if report["board_id"] not in board_dirs:
-            board_slug = unique_dirname(ws_dir, slugify(board_name))
-            board_dir = ws_dir / board_slug
-            board_dir.mkdir()
-            board_dirs[report["board_id"]] = board_dir
-        board_dir = board_dirs[report["board_id"]]
-
         report_slug = unique_dirname(
-            board_dir,
-            f"{report['position']:03d}-{slugify(report['title'])}",
+            ws_dir,
+            f"{idx:03d}-{slugify(report['title'])}",
         )
-        report_dir = board_dir / report_slug
+        report_dir = ws_dir / report_slug
         report_dir.mkdir()
 
         tags, checklist, attachments = _report_payload(conn, report["id"])

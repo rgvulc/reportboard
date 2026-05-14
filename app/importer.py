@@ -22,7 +22,9 @@ import yaml
 from .delta_md import md_to_delta
 
 
-SUPPORTED_SCHEMA_VERSIONS = {1}
+# v2 (current): flat workspace dirs.
+# v1 (legacy):  ws_dir/<board_slug>/<report_dir>/. Still accepted on import.
+SUPPORTED_SCHEMA_VERSIONS = {1, 2}
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n?(.*)\Z", re.DOTALL)
 _REQUIRED_REPORT_FIELDS = {
@@ -165,7 +167,7 @@ def _load_report(report_dir: Path) -> ParsedReport:
     return ParsedReport(frontmatter=fm, body=body, attachment_files=attachment_files)
 
 
-def _load_workspace(ws_dir: Path) -> ParsedWorkspace:
+def _load_workspace(ws_dir: Path, schema_version: int = 2) -> ParsedWorkspace:
     meta_path = ws_dir / "_workspace.json"
     if not meta_path.exists():
         raise ImportError(f"missing _workspace.json in {ws_dir.name!r}")
@@ -180,8 +182,14 @@ def _load_workspace(ws_dir: Path) -> ParsedWorkspace:
             )
 
     parsed = ParsedWorkspace(workspace_meta=meta)
-    for board_dir in sorted(p for p in ws_dir.iterdir() if p.is_dir()):
-        for report_dir in sorted(p for p in board_dir.iterdir() if p.is_dir()):
+    if schema_version == 1:
+        # Legacy nested layout: ws_dir/<board_slug>/<report_dir>/
+        for board_dir in sorted(p for p in ws_dir.iterdir() if p.is_dir()):
+            for report_dir in sorted(p for p in board_dir.iterdir() if p.is_dir()):
+                parsed.reports.append(_load_report(report_dir))
+    else:
+        # Flat layout: ws_dir/<report_dir>/
+        for report_dir in sorted(p for p in ws_dir.iterdir() if p.is_dir()):
             parsed.reports.append(_load_report(report_dir))
     return parsed
 
@@ -190,10 +198,11 @@ def load_archive(root: Path) -> ParsedArchive:
     archive_root = _find_archive_root(root)
     manifest = _load_manifest(archive_root)
     archive = ParsedArchive(manifest=manifest)
+    version = manifest.get("schema_version", 2)
     workspaces_dir = archive_root / "workspaces"
     if workspaces_dir.exists():
         for ws_dir in sorted(p for p in workspaces_dir.iterdir() if p.is_dir()):
-            archive.workspaces.append(_load_workspace(ws_dir))
+            archive.workspaces.append(_load_workspace(ws_dir, version))
     return archive
 
 
