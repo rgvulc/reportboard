@@ -5,7 +5,7 @@ Constrained to a feature subset that round-trips losslessly:
   Inline attributes:  bold, italic, strike, code, link
   Block attributes:   header (1-6), list (bullet | ordered), blockquote,
                       code-block (with optional language)
-  Embeds:             image, video
+  Embeds:             image, video, formula (inline LaTeX)
 
 Video embeds are preserved in markdown via a link with a sentinel title:
 
@@ -13,6 +13,10 @@ Video embeds are preserved in markdown via a link with a sentinel title:
 
 A markdown reader sees a labelled link to the video URL; `md_to_delta`
 recognises the sentinel title and re-emits a video embed.
+
+Formula embeds use the standard ``$...$`` math syntax. Literal ``$`` in
+body text is escaped to ``\\$`` so it doesn't accidentally open a math
+span on re-parse.
 
 Both functions are deterministic. On the supported feature set,
 `md_to_delta(delta_to_md(d))` equals `d` after canonicalisation
@@ -56,6 +60,8 @@ def delta_to_md(delta) -> str:
                 tokens.append(("embed", ("image", insert["image"]), attrs))
             elif "video" in insert:
                 tokens.append(("embed", ("video", insert["video"]), attrs))
+            elif "formula" in insert:
+                tokens.append(("embed", ("formula", insert["formula"]), attrs))
             # Unknown embeds dropped silently
             continue
         text = str(insert)
@@ -166,8 +172,9 @@ def _safe_code_fence(body: str) -> str:
 
 # Characters that need escaping in regular markdown body text. The set is
 # intentionally conservative — over-escaping is benign because the parser
-# strips backslash-escapes.
-_INLINE_ESCAPE_RE = re.compile(r"([\\`*_\[\]#>~!])")
+# strips backslash-escapes. `$` is here so literal currency-style text
+# doesn't accidentally open an inline-math span on re-parse.
+_INLINE_ESCAPE_RE = re.compile(r"([\\`*_\[\]#>~!$])")
 
 
 def _escape_md(text: str) -> str:
@@ -196,11 +203,14 @@ def _render_inline(segments, in_code: bool = False) -> str:
     for seg in segments:
         kind = seg[0]
         if kind == "embed":
-            embed_kind, url = seg[1]
+            embed_kind, value = seg[1]
             if embed_kind == "image":
-                out.append(f"![]({url})")
+                out.append(f"![]({value})")
             elif embed_kind == "video":
-                out.append(f'[video]({url} "{VIDEO_LINK_TITLE}")')
+                out.append(f'[video]({value} "{VIDEO_LINK_TITLE}")')
+            elif embed_kind == "formula":
+                # `value` is the LaTeX source; emit as inline math.
+                out.append(f"${value}$")
             continue
         # text
         text = seg[1]
@@ -395,6 +405,12 @@ def _parse_inline(text: str) -> list:
         m = re.match(r"!\[[^\]]*\]\(([^)\s]+)\)", text[i:])
         if m:
             result.append(("embed", {"image": m.group(1)}, {}))
+            i += m.end()
+            continue
+        # 1b. Inline math: $...$ — content cannot contain $ or newline.
+        m = re.match(r"\$([^$\n]+)\$", text[i:])
+        if m:
+            result.append(("embed", {"formula": m.group(1)}, {}))
             i += m.end()
             continue
         # 2. Video link with sentinel title.

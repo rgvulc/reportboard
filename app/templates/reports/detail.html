@@ -5,6 +5,7 @@
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/quill/quill.snow.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/highlight/github-dark.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css') }}">
 <style>
     #quill-editor { min-height: 320px; }
     .ql-toolbar.ql-snow, .ql-container.ql-snow {
@@ -107,6 +108,7 @@
 </form>
 
 <script src="{{ url_for('static', filename='vendor/highlight/highlight.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/katex/katex.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/quill/quill.js') }}"></script>
 <script>
 window.UPLOAD_URL = "{{ url_for('attachments.upload', report_id=report.id) }}";
@@ -133,12 +135,13 @@ document.addEventListener('DOMContentLoaded', function () {
         placeholder: 'Start writing…',
         modules: {
             syntax: { hljs: window.hljs },
+            formula: true,    // requires window.katex (loaded above)
             toolbar: [
                 [{ header: [1, 2, 3, 4, 5, 6, false] }],
                 ['bold', 'italic', 'strike', 'code'],
                 [{ list: 'ordered' }, { list: 'bullet' }],
                 ['blockquote', 'code-block'],
-                ['link', 'image', 'video'],
+                ['link', 'image', 'video', 'formula'],
                 ['clean'],
             ],
         },

@@ -40,6 +40,10 @@ def video(url):
     return {"insert": {"video": url}}
 
 
+def formula(latex):
+    return {"insert": {"formula": latex}}
+
+
 # ============================================================================
 #  Delta → Markdown
 # ============================================================================
@@ -137,6 +141,16 @@ class TestDeltaToMd:
         ))
         assert out == '[video](https://example.com/clip.mp4 "video-embed")'
 
+    def test_formula_embed_renders_as_inline_math(self):
+        out = delta_to_md(D(
+            text("Einstein: "), formula("E=mc^2"), nl(),
+        ))
+        assert out == "Einstein: $E=mc^2$"
+
+    def test_literal_dollar_in_body_text_is_escaped(self):
+        out = delta_to_md(D(text("That costs $100"), nl()))
+        assert out == "That costs \\$100"
+
     def test_special_characters_are_escaped(self):
         out = delta_to_md(D(text("a*b_c[d]"), nl()))
         assert "\\*" in out and "\\_" in out and "\\[" in out and "\\]" in out
@@ -199,6 +213,21 @@ class TestMdToDelta:
             {"insert": "\n", "attributes": {"code-block": "python"}},
         ]}
 
+    def test_inline_math(self):
+        out = md_to_delta("Einstein: $E=mc^2$")
+        assert out == {"ops": [
+            {"insert": "Einstein: "},
+            {"insert": {"formula": "E=mc^2"}},
+            {"insert": "\n"},
+        ]}
+
+    def test_escaped_dollar_is_literal(self):
+        """Escaped `\\$` doesn't open a math span — it's a literal dollar."""
+        out = md_to_delta("That costs \\$100")
+        assert out == {"ops": [
+            {"insert": "That costs $100\n"},
+        ]}
+
 
 # ============================================================================
 #  Round trips — the load-bearing tests
@@ -247,6 +276,13 @@ ROUND_TRIP_CASES = [
                  id="image embed surrounded by paragraphs"),
     pytest.param(D(video("https://example.com/clip.mp4"), nl()),
                  id="video embed"),
+    pytest.param(D(text("Einstein: "), formula("E=mc^2"), nl()),
+                 id="inline formula"),
+    pytest.param(D(text("a "), formula("\\frac{1}{2}"),
+                    text(" plus "), formula("\\sqrt{x}"), nl()),
+                 id="two formulas in one line"),
+    pytest.param(D(text("Buy at $100 then $200."), nl()),
+                 id="dollar signs in body text are escaped, not math"),
     pytest.param(D(text("text with "), text("emphasised link", bold=True,
                                             link="https://example.com"),
                     text(" in it"), nl()),

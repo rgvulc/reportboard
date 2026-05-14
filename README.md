@@ -177,6 +177,20 @@ cat app/static/vendor/highlight/highlight.min.js | sha256sum
 cat app/static/vendor/highlight/github-dark.min.css | sha256sum
 echo
 
+echo "katex (js + css):"
+curl -fsSL https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js | sha256sum
+curl -fsSL https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css | sha256sum
+cat app/static/vendor/katex/katex.min.js | sha256sum
+cat app/static/vendor/katex/katex.min.css | sha256sum
+echo
+
+echo "katex (fonts — 20 woff2 files):"
+for f in $(ls app/static/vendor/katex/fonts/); do
+    upstream=$(curl -fsSL "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/fonts/$f" | sha256sum | cut -d' ' -f1)
+    local_hash=$(cat "app/static/vendor/katex/fonts/$f" | sha256sum | cut -d' ' -f1)
+    printf "  %-40s %s\n" "$f" "$([ "$upstream" = "$local_hash" ] && echo OK || echo "MISMATCH")"
+done
+
 ```
 
 - Each report stores its body as **Quill Delta JSON only** in
