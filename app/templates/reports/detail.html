@@ -98,7 +98,16 @@
 
 <aside class="report-side">
     <section class="report-checklist-section">
-        <h2>Checklist</h2>
+        <div class="report-checklist-header">
+            <h2>Checklist</h2>
+            <form hx-post="{{ url_for('checklist.clear_completed', report_id=report.id) }}"
+                  hx-target="#checklist" hx-swap="outerHTML"
+                  hx-confirm="Remove all checked items?"
+                  class="checklist-clear-form">
+                <button type="submit" class="checklist-clear-btn"
+                        title="Remove all checked items">Clear completed</button>
+            </form>
+        </div>
         {% with items=checklist_items, report_id=report.id %}
             {% include "reports/_checklist.html" %}
         {% endwith %}

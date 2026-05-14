@@ -551,9 +551,39 @@ main:has(.report-layout) {
     margin-top: 0;
 }
 
+.report-checklist-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.report-checklist-header h2 {
+    margin: 0;
+}
+
 .report-checklist-section h2 {
     font-size: 1.05rem;
     margin: 0 0 0.5rem;
+}
+
+.checklist-clear-form {
+    margin: 0;
+}
+
+.checklist-clear-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid transparent;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.78rem;
+}
+
+.checklist-clear-btn:hover:not(:disabled) {
+    color: var(--danger-text);
+    background: var(--danger-hover-bg);
+    border-color: var(--danger-border);
 }
 
 .checklist {

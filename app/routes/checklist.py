@@ -78,6 +78,21 @@ def delete(item_id: int):
     return _render_fragment(row["report_id"])
 
 
+@bp.post("/reports/<int:report_id>/checklist/clear-completed")
+def clear_completed(report_id: int):
+    db = get_db()
+    if db.execute("SELECT 1 FROM report WHERE id = ?", (report_id,)).fetchone() is None:
+        abort(404)
+
+    with db:
+        db.execute(
+            "DELETE FROM checklist_item WHERE report_id = ? AND done = 1",
+            (report_id,),
+        )
+
+    return _render_fragment(report_id)
+
+
 @bp.post("/reports/<int:report_id>/checklist/reorder")
 def reorder(report_id: int):
     db = get_db()

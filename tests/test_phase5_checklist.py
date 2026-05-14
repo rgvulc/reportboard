@@ -207,3 +207,69 @@ def test_detail_page_includes_existing_checklist_items(client, app):
     assert "first item" in body
     assert "second item" in body
     assert 'id="checklist"' in body
+
+
+def test_clear_completed_deletes_only_checked_items(client, app):
+    _, report_id, _ = _setup(client, app)
+    client.post(f"/reports/{report_id}/checklist", data={"text": "todo"})
+    client.post(f"/reports/{report_id}/checklist", data={"text": "done"})
+    client.post(f"/reports/{report_id}/checklist", data={"text": "also done"})
+    rows = _items(app, report_id)
+    # Mark items 2 and 3 as done.
+    client.post(f"/checklist/{rows[1]['id']}/toggle")
+    client.post(f"/checklist/{rows[2]['id']}/toggle")
+
+    response = client.post(
+        f"/reports/{report_id}/checklist/clear-completed"
+    )
+    assert response.status_code == 200
+    remaining = _items(app, report_id)
+    assert [r["text"] for r in remaining] == ["todo"]
+
+
+def test_clear_completed_no_op_when_none_checked(client, app):
+    _, report_id, _ = _setup(client, app)
+    client.post(f"/reports/{report_id}/checklist", data={"text": "a"})
+    client.post(f"/reports/{report_id}/checklist", data={"text": "b"})
+
+    response = client.post(
+        f"/reports/{report_id}/checklist/clear-completed"
+    )
+    assert response.status_code == 200
+    assert [r["text"] for r in _items(app, report_id)] == ["a", "b"]
+
+
+def test_clear_completed_unknown_report_returns_404(client):
+    response = client.post("/reports/99999/checklist/clear-completed")
+    assert response.status_code == 404
+
+
+def test_clear_completed_does_not_affect_other_reports(client, app):
+    """Only THIS report's completed items are deleted."""
+    _, report_a, todo_id = _setup(client, app)
+    ws_id_a = client.application is None  # placeholder
+
+    # Create a second report in the same workspace.
+    with app.app_context():
+        ws_id = get_db().execute(
+            "SELECT id FROM workspace WHERE name='WS'"
+        ).fetchone()["id"]
+    client.post(
+        f"/workspaces/{ws_id}/reports",
+        data={"title": "B", "board_id": todo_id},
+    )
+    with app.app_context():
+        report_b = get_db().execute(
+            "SELECT id FROM report ORDER BY id DESC LIMIT 1"
+        ).fetchone()["id"]
+
+    client.post(f"/reports/{report_a}/checklist", data={"text": "done-a"})
+    client.post(f"/reports/{report_b}/checklist", data={"text": "done-b"})
+    a_id = _items(app, report_a)[0]["id"]
+    b_id = _items(app, report_b)[0]["id"]
+    client.post(f"/checklist/{a_id}/toggle")
+    client.post(f"/checklist/{b_id}/toggle")
+
+    client.post(f"/reports/{report_a}/checklist/clear-completed")
+    assert _items(app, report_a) == []
+    assert [r["text"] for r in _items(app, report_b)] == ["done-b"]
