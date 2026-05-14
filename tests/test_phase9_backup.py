@@ -181,24 +181,35 @@ class TestSlugify:
 
 
 class TestUrlRewrite:
-    def test_export_strips_prefix(self):
+    def test_export_strips_leading_slash_only(self):
+        """v3 keeps the id in the path; the export just drops the leading
+        slash so the URL becomes relative to the workspace folder."""
         out = exporter.rewrite_urls_for_export(
             "see ![](/attachments/42/foo.png) and [x](/attachments/42/y.pdf)",
-            42,
         )
-        assert out == "see ![](attachments/foo.png) and [x](attachments/y.pdf)"
+        assert out == (
+            "see ![](attachments/42/foo.png) and [x](attachments/42/y.pdf)"
+        )
 
-    def test_export_does_not_touch_other_report_ids(self):
+    def test_export_handles_cross_report_references(self):
+        """Unlike the legacy per-report rewrite, v3 strips the leading slash
+        from any /attachments/ URL, so cross-report references survive."""
         out = exporter.rewrite_urls_for_export(
-            "![](/attachments/99/foo.png)", 42
+            "![](/attachments/99/foo.png)",
         )
-        assert out == "![](/attachments/99/foo.png)"
+        assert out == "![](attachments/99/foo.png)"
 
-    def test_import_inverts_export(self):
+    def test_v3_import_inverts_export(self):
         original = "![](/attachments/42/foo.png) [x](/attachments/42/y.pdf)"
-        exported = exporter.rewrite_urls_for_export(original, 42)
-        restored = importer.rewrite_urls_for_import(exported, 42)
+        exported = exporter.rewrite_urls_for_export(original)
+        restored = importer.rewrite_urls_for_import_v3(exported)
         assert restored == original
+
+    def test_v1v2_import_inverse_preserved(self):
+        """Legacy v1/v2 importer still expands `attachments/<file>` correctly."""
+        legacy_body = "![](attachments/foo.png)"
+        restored = importer.rewrite_urls_for_import(legacy_body, 42)
+        assert restored == "![](/attachments/42/foo.png)"
 
 
 class TestFrontmatterParse:
@@ -490,32 +501,44 @@ class TestCli:
 # --- Flat workspace layout (schema_version 2) --------------------------------
 
 class TestFlatLayout:
-    def test_export_has_no_board_subfolders(self, app, tmp_path):
-        """v2 layout: reports live directly under workspaces/<ws>/, never
-        under an intermediate board folder."""
+    def test_export_writes_flat_md_files_at_workspace_root(self, app, tmp_path):
+        """v3: each report is a single .md file at the workspace root, with
+        a single shared attachments/ folder containing id-named subdirs."""
         _seed_complex(app)
         zip_path = _export_to_tmp(app, tmp_path)
         with zipfile.ZipFile(zip_path) as zf:
             names = zf.namelist()
 
-        # Every report.md is exactly three slashes deep:
-        # workspaces/<ws>/<report>/report.md
+        # Each .md file is at exactly workspaces/<ws>/<NNN>-<slug>.md (depth 2).
         for n in names:
-            if n.endswith("/report.md"):
-                assert n.count("/") == 3, f"unexpected depth: {n!r}"
+            if n.endswith(".md"):
+                assert n.count("/") == 2, f"unexpected .md depth: {n!r}"
 
-        # No path component that's a known board name (case sensitive).
+        # Attachments live under workspaces/<ws>/attachments/<id>/<filename>.
+        for n in names:
+            if "/attachments/" in n and not n.endswith("/"):
+                assert n.count("/") == 4, f"unexpected attachment depth: {n!r}"
+
+        # No board folders / report subfolders leaked into the tree.
         for n in names:
             parts = n.split("/")
-            assert "Todo" not in parts, f"board folder leaked: {n!r}"
-            assert "Complete" not in parts, f"board folder leaked: {n!r}"
+            assert "Todo" not in parts and "Complete" not in parts, n
 
-    def test_manifest_schema_version_is_2(self, app, tmp_path):
+    def test_manifest_schema_version_is_3(self, app, tmp_path):
         _seed_complex(app)
         zip_path = _export_to_tmp(app, tmp_path)
         with zipfile.ZipFile(zip_path) as zf:
             manifest = json.loads(zf.read("manifest.json"))
-        assert manifest["schema_version"] == 2
+        assert manifest["schema_version"] == 3
+
+    def test_attachments_folder_uses_report_id_subdirs(self, app, tmp_path):
+        _seed_complex(app)
+        zip_path = _export_to_tmp(app, tmp_path)
+        with zipfile.ZipFile(zip_path) as zf:
+            names = zf.namelist()
+        # Report 100 owns abc.png; the path should be id-named (not slug-named).
+        assert any(n.endswith("attachments/100/abc.png") for n in names), \
+            f"expected attachments/100/abc.png; saw: {names}"
 
     def test_legacy_v1_archive_still_imports(self, app, tmp_path):
         """A pre-existing v1 export (board subfolders, schema_version=1) is
@@ -571,6 +594,50 @@ class TestFlatLayout:
                 "SELECT title FROM report"
             ))
         assert [r["title"] for r in rows] == ["Old report"]
+
+    def test_legacy_v2_archive_still_imports(self, app, tmp_path):
+        """v2 archives (per-report folders, no board nesting) are still
+        accepted on import."""
+        v2_zip = tmp_path / "v2.zip"
+        manifest = {
+            "schema_version": 2,
+            "exported_at": "2026-01-01T00:00:00.000",
+            "boards": [{"id": 1, "name": "Todo", "position": 0}],
+            "importance_levels": [],
+            "tags": [],
+            "workspaces": [{
+                "id": 1, "name": "WS", "position": 0,
+                "created_at": "2026-01-01 00:00:00.000",
+                "updated_at": "2026-01-01 00:00:00.000",
+            }],
+        }
+        ws_meta = {
+            "id": 1, "name": "WS", "position": 0,
+            "created_at": "2026-01-01 00:00:00.000",
+            "updated_at": "2026-01-01 00:00:00.000",
+        }
+        report_md = (
+            "---\nid: 1\nboard: Todo\nimportance: null\nposition: 0\n"
+            "title: v2 report\n"
+            "created_at: '2026-01-01 00:00:00.000'\n"
+            "updated_at: '2026-01-01 00:00:00.000'\n"
+            "tags: []\nchecklist: []\nattachments: []\n---\nBody."
+        )
+        with zipfile.ZipFile(v2_zip, "w") as zf:
+            zf.writestr("manifest.json", json.dumps(manifest))
+            zf.writestr("workspaces/000-WS/_workspace.json",
+                        json.dumps(ws_meta))
+            zf.writestr("workspaces/000-WS/000-v2-report/report.md", report_md)
+
+        _wipe(app)
+        with app.app_context():
+            importer.import_from_zip(
+                get_db(), Path(app.config["ATTACHMENTS_DIR"]), v2_zip,
+            )
+            titles = [r["title"] for r in get_db().execute(
+                "SELECT title FROM report"
+            )]
+        assert titles == ["v2 report"]
 
 
 # --- Slug collisions --------------------------------------------------------

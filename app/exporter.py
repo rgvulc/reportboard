@@ -39,10 +39,12 @@ import yaml
 from .delta_md import delta_to_md
 
 
-# v2 (current): flat layout — each workspace dir contains _workspace.json and
-#               its report dirs directly. Board name lives in frontmatter only.
-# v1 (legacy):  ws_dir/<board_slug>/<report_dir>/. Importer still reads these.
-SCHEMA_VERSION = 2
+# v3 (current): workspace dir contains _workspace.json + flat .md files +
+#               a single attachments/ folder whose subfolders are named by
+#               report id. Body URLs are `attachments/<id>/<file>`.
+# v2 (legacy):  ws_dir/<NNN>-<slug>/{report.md, attachments/<file>}.
+# v1 (legacy):  ws_dir/<board>/<NNN>-<slug>/{report.md, attachments/<file>}.
+SCHEMA_VERSION = 3
 
 _SLUG_MAX_LEN = 60
 _SLUG_BAD_CHARS_RE = re.compile(r"[^a-zA-Z0-9._-]+")
@@ -86,13 +88,10 @@ def unique_dirname(parent: Path, base: str) -> str:
     return candidate
 
 
-_URL_EXPORT_RE_TMPL = r"/attachments/{report_id}/"
-
-
-def rewrite_urls_for_export(content: str, report_id: int) -> str:
-    """Strip the absolute prefix from this report's attachment URLs."""
-    pattern = _URL_EXPORT_RE_TMPL.format(report_id=report_id)
-    return content.replace(pattern, "attachments/")
+def rewrite_urls_for_export(content: str) -> str:
+    """Strip the leading slash from attachment URLs so they're relative to
+    the workspace folder. `/attachments/<id>/<file>` → `attachments/<id>/<file>`."""
+    return content.replace("/attachments/", "attachments/")
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
@@ -124,7 +123,7 @@ def render_report_md(
     # Delta is canonical storage; render to markdown for the export.
     delta_json = report.get("content_delta") or ""
     markdown_body = delta_to_md(delta_json) if delta_json.strip() else ""
-    body = rewrite_urls_for_export(markdown_body, report["id"])
+    body = rewrite_urls_for_export(markdown_body)
     yaml_text = yaml.safe_dump(
         frontmatter, sort_keys=False, allow_unicode=True, default_flow_style=False
     )
@@ -227,6 +226,10 @@ def write_workspace(
         (workspace["id"],),
     ).fetchall()
 
+    # All attachments for this workspace go under one shared folder, with
+    # per-report subdirs named by report id (stable across renames).
+    ws_attachments_dir = ws_dir / "attachments"
+
     for idx, r in enumerate(reports):
         report = _row_to_dict(r)
         board_name = board_names[report["board_id"]]
@@ -235,12 +238,10 @@ def write_workspace(
             if report["importance_id"] is not None else None
         )
 
-        report_slug = unique_dirname(
+        md_filename = unique_dirname(
             ws_dir,
-            f"{idx:03d}-{slugify(report['title'])}",
+            f"{idx:03d}-{slugify(report['title'])}.md",
         )
-        report_dir = ws_dir / report_slug
-        report_dir.mkdir()
 
         tags, checklist, attachments = _report_payload(conn, report["id"])
 
@@ -252,16 +253,16 @@ def write_workspace(
             checklist=checklist,
             attachments=attachments,
         )
-        (report_dir / "report.md").write_text(md_text, encoding="utf-8")
+        (ws_dir / md_filename).write_text(md_text, encoding="utf-8")
 
         if attachments:
-            att_dir = report_dir / "attachments"
-            att_dir.mkdir()
+            dest_subdir = ws_attachments_dir / str(report["id"])
+            dest_subdir.mkdir(parents=True, exist_ok=True)
             src_dir = attachments_root / str(report["id"])
             for a in attachments:
                 src = src_dir / a["filename"]
                 if src.exists():
-                    shutil.copy2(src, att_dir / a["filename"])
+                    shutil.copy2(src, dest_subdir / a["filename"])
 
 
 def export_to_dir(

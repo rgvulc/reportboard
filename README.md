@@ -121,7 +121,7 @@ metadata. Round-trip is byte-identical at the parsed-dict level.
 .venv/bin/flask --app app import-backup path/to/backup.zip --format=markdown
 ```
 
-Layout (schema_version 2):
+Layout (schema_version 3):
 
 ```
 backup.zip
@@ -129,28 +129,36 @@ backup.zip
 └── workspaces/
     └── <NNN>-<workspace-slug>/
         ├── _workspace.json
-        └── <NNN>-<report-slug>/
-            ├── report.md                # YAML frontmatter + markdown body
-            └── attachments/<filename>
+        ├── 000-Some-report.md       # YAML frontmatter + markdown body
+        ├── 001-Another-report.md
+        ├── 002-Third-one.md
+        └── attachments/
+            ├── 100/<filename>        # subfolder per report id
+            └── 102/<filename>
 ```
 
-One `report.md` per report, derived via `app/delta_md.py`. Reports for
-**all boards** live directly under the workspace folder (no per-board
-subfolder); the board name is recorded in each report's frontmatter
-(`board: Todo`) and used on import to place the report in the correct
+Each `report.md` lives at the workspace root. Reports for **all boards**
+are interleaved here; the board name lives in each report's frontmatter
+(`board: Todo`) and is used on import to place the report in the correct
 column. Reports are numbered sequentially across the whole workspace in
 board-then-position order, so the filesystem listing matches the natural
-kanban reading order. The top-level `manifest.json` records boards,
-importance levels, tags, and workspace order.
+kanban reading order.
 
-Attachment URLs in the body are stored relative and rewritten back to
-absolute form on import. Round-trip is lossy for any Delta attribute
-outside the markdown-safe subset (color, font, alignment, etc.) — the
-editor's toolbar and paste matcher keep stored Deltas within that subset,
-so in practice round-trip is clean.
+Attachments live in a single shared `attachments/` folder under the
+workspace, with id-named subdirectories (stable across renames). Body
+URLs in the .md files are `attachments/<id>/<filename>` — relative and
+correctly resolvable in any markdown viewer. On import the URLs are
+rewritten back to the absolute `/attachments/<id>/<filename>` form the
+app uses internally.
 
-Legacy schema_version 1 archives (with per-board subfolders) are still
-accepted on import.
+Round-trip is lossy for any Delta attribute outside the markdown-safe
+subset (color, font, alignment, etc.) — the editor's toolbar and paste
+matcher keep stored Deltas within that subset, so in practice round-trip
+is clean.
+
+Legacy archives are still accepted on import:
+- **schema_version 1** — per-board subfolders (`ws/<board>/<report>/report.md`)
+- **schema_version 2** — per-report subfolders (`ws/<report>/report.md`)
 
 ### Verify a JSON export is lossless
 
