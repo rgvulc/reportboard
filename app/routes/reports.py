@@ -79,11 +79,19 @@ def create(workspace_id: int):
         (workspace_id, board_id),
     ).fetchone()["next"]
 
+    # Default new reports to the "Medium" importance level when it exists.
+    # If the user renamed/removed it, fall back to NULL — the report just
+    # has no importance set, same as before.
+    medium = db.execute(
+        "SELECT id FROM importance_level WHERE name = 'Medium' COLLATE NOCASE"
+    ).fetchone()
+    default_importance = medium["id"] if medium else None
+
     with db:
         db.execute(
-            "INSERT INTO report (workspace_id, board_id, title, position) "
-            "VALUES (?, ?, ?, ?)",
-            (workspace_id, board_id, title, next_pos),
+            "INSERT INTO report (workspace_id, board_id, importance_id, "
+            "title, position) VALUES (?, ?, ?, ?, ?)",
+            (workspace_id, board_id, default_importance, title, next_pos),
         )
 
     return redirect(url_for("workspaces.view", workspace_id=workspace_id))

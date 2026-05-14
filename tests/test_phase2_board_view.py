@@ -76,6 +76,47 @@ def test_create_report_assigns_position_max_plus_one(client, app):
     ]
 
 
+def test_new_report_defaults_to_medium_importance(client, app):
+    _create_workspace(client, "WS")
+    ws_id = _workspace_id(app, "WS")
+    todo_id = _board_id(app, "Todo")
+
+    _create_report(client, ws_id, todo_id, "Test")
+
+    with app.app_context():
+        db = get_db()
+        row = db.execute(
+            "SELECT il.name FROM report r "
+            "JOIN importance_level il ON il.id = r.importance_id "
+            "WHERE r.workspace_id = ?", (ws_id,),
+        ).fetchone()
+    assert row is not None
+    assert row["name"] == "Medium"
+
+
+def test_new_report_falls_back_to_null_when_medium_absent(client, app):
+    """If the user has renamed/removed Medium, new reports keep working —
+    importance stays NULL rather than failing."""
+    with app.app_context():
+        db = get_db()
+        with db:
+            db.execute("DELETE FROM importance_level WHERE name = 'Medium'")
+
+    _create_workspace(client, "WS")
+    ws_id = _workspace_id(app, "WS")
+    todo_id = _board_id(app, "Todo")
+
+    response = _create_report(client, ws_id, todo_id, "Test")
+    assert response.status_code in (200, 302)
+
+    with app.app_context():
+        row = get_db().execute(
+            "SELECT importance_id FROM report WHERE workspace_id = ?",
+            (ws_id,),
+        ).fetchone()
+    assert row["importance_id"] is None
+
+
 def test_first_report_in_a_column_gets_position_zero(client, app):
     _create_workspace(client, "WS")
     ws_id = _workspace_id(app, "WS")
