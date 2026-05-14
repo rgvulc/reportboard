@@ -297,6 +297,7 @@ button {
     border-radius: var(--radius);
     cursor: pointer;
     font-family: inherit;
+    font-size: inherit;
 }
 
 button:hover:not(:disabled) {
@@ -676,6 +677,7 @@ input, select, textarea {
     color: var(--text);
     background: var(--surface);
     font-family: inherit;
+    font-size: inherit;
 }
 
 select option {
