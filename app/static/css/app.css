@@ -928,7 +928,7 @@ input::placeholder, textarea::placeholder {
 }
 
 /* ============================================================
- *  Profile: Paper — serif, off-white, generous spacing
+ *  Profile: Paper — vintage book: warm cream, sepia accent, Times serif
  * ============================================================ */
 
 :root[data-theme="paper"] {
@@ -987,6 +987,99 @@ input::placeholder, textarea::placeholder {
 
 :root[data-theme="paper"] button {
     font-family: var(--font-body);
+}
+
+
+/* ============================================================
+ *  Profile: Clean — Muji-inspired: warm off-white background, very
+ *  muted earthy tones, thin sans-serif at light weight, sharp clean
+ *  edges, no shadows, lots of room.
+ * ============================================================ */
+
+:root[data-theme="clean"] {
+    --bg: #f5f1e8;
+    --surface: #faf7ef;
+    --border: #d6cebd;
+    --text: #2e2a24;
+    --muted: #8a8276;
+    --accent: #6b5d4c;
+    --accent-fg: #faf7ef;
+    --column-bg: #ece6d6;
+    --hover-tint: #ebe5d4;
+    --error-bg: #ece1d8;
+    --error-text: #6e3e2e;
+    --error-border: #c9b8a8;
+    --danger-text: #7a3a2a;
+    --danger-border: #c9b8a8;
+    --danger-hover-bg: #ece1d8;
+    --ghost-bg: #ebe5d4;
+
+    /* Hiragino first for the actual Muji feel on Mac; system stack on Linux. */
+    --font-body: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+                 "Helvetica Neue", "Avenir Next", "Avenir",
+                 -apple-system, system-ui, sans-serif;
+    --font-heading: var(--font-body);
+    --radius: 0;
+    --radius-lg: 0;
+    --card-shadow: none;
+    --main-max-width: 56rem;
+}
+
+:root[data-theme="clean"] body {
+    font-weight: 300;
+    line-height: 1.75;
+    letter-spacing: 0.01em;
+}
+
+/* With body at weight 300, default browser "bolder" only nudges to 400ish.
+ * Force bold elements to weight 700 so they stand out properly. */
+:root[data-theme="clean"] strong,
+:root[data-theme="clean"] b,
+:root[data-theme="clean"] .ql-editor strong,
+:root[data-theme="clean"] .ql-editor b {
+    font-weight: 700;
+}
+
+:root[data-theme="clean"] main {
+    padding: 2rem 2.5rem;
+}
+
+:root[data-theme="clean"] h1,
+:root[data-theme="clean"] h2,
+:root[data-theme="clean"] h3 {
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+:root[data-theme="clean"] h1 {
+    font-size: 1.5rem;
+}
+
+:root[data-theme="clean"] .board-card,
+:root[data-theme="clean"] .workspace-item,
+:root[data-theme="clean"] .settings-item {
+    box-shadow: none;
+    border-color: var(--border);
+    background: var(--surface);
+}
+
+/* Buttons recede until hover — Muji-style "almost invisible" affordance. */
+:root[data-theme="clean"] button,
+:root[data-theme="clean"] .workspace-open,
+:root[data-theme="clean"] .settings-link {
+    font-family: var(--font-body);
+    font-weight: 300;
+    background: transparent;
+    border-color: var(--border);
+}
+
+:root[data-theme="clean"] button:hover:not(:disabled),
+:root[data-theme="clean"] .workspace-open:hover {
+    background: var(--hover-tint);
+}
+
+:root[data-theme="clean"] button.primary {
+    font-weight: 400;
 }
 
 /* ============================================================
