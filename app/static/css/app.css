@@ -1346,3 +1346,990 @@ input::placeholder, textarea::placeholder {
 .board-card.filter-hidden {
     display: none;
 }
+
+/* ============================================================
+ *  Profile: Vintage — warm cream paper, oxblood ink, typewriter stamps,
+ *  ruled index cards, display serif titles. Designed to drop in next to
+ *  the existing themes — no DOM changes; relies on the same class names.
+ *
+ *  Append this block to your app.css and add
+ *      <option value="vintage">Vintage</option>
+ *  to the #theme-select <select>.
+ * ============================================================ */
+
+/* Webfonts — DM Serif Display (titles), Lora (body), JetBrains Mono
+ * (labels / metadata), Special Elite (stamps).
+ * Loading via @import keeps the CSS file self-contained, but you can
+ * move this to a <link rel="preconnect"> + <link rel="stylesheet"> in
+ * the layout head for a faster first paint. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600;700&family=Special+Elite&display=swap');
+
+:root[data-theme="vintage"] {
+    /* Paper + ink palette */
+    --bg:               #f1e7d0;
+    --surface:          #f6eed8;
+    --surface-2:        #ebdeb8;
+    --border:           #b9a37b;
+    --border-faint:     #d5c5a0;
+    --text:             #29211a;
+    --muted:            #6f604a;
+    --muted-2:          #8a7657;
+
+    /* Oxblood ink — accent */
+    --accent:           #a23226;
+    --accent-fg:        #f6eed8;
+    --accent-soft:      rgba(162, 50, 38, 0.10);
+
+    --column-bg:        transparent;
+    --hover-tint:       rgba(162, 50, 38, 0.08);
+    --ghost-bg:         rgba(162, 50, 38, 0.14);
+
+    --error-bg:         #f0d8c8;
+    --error-text:       #7a2418;
+    --error-border:     #c69380;
+    --danger-text:      #8a2a20;
+    --danger-border:    #c69380;
+    --danger-hover-bg:  #f0d8c8;
+
+    --font-body:        "Lora", "Iowan Old Style", "Charter", Georgia, serif;
+    --font-heading:     "DM Serif Display", "Playfair Display", Georgia, serif;
+    --font-mono:        "JetBrains Mono", "Courier Prime", "Courier New", monospace;
+    --font-stamp:       "Special Elite", "Courier New", monospace;
+
+    --radius:           0;
+    --radius-lg:        0;
+    --card-shadow:      none;
+    --main-max-width:   72rem;
+}
+
+/* ---- Paper texture (fibers + foxing + faint horizontal grain) ----
+ * Pinned to the viewport so scrolling stays in front of a stable
+ * paper. pointer-events: none means it never blocks clicks. */
+:root[data-theme="vintage"] body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: multiply;
+    opacity: 0.85;
+    background:
+        radial-gradient(ellipse at center,
+            transparent 0%, transparent 55%,
+            rgba(82, 60, 30, 0.08) 85%,
+            rgba(60, 42, 18, 0.18) 100%),
+        repeating-linear-gradient(0deg,
+            rgba(120, 90, 50, 0.0) 0px,
+            rgba(120, 90, 50, 0.0) 2px,
+            rgba(120, 90, 50, 0.018) 3px,
+            rgba(120, 90, 50, 0.0) 4px),
+        radial-gradient(2px 2px at 12% 22%, rgba(120,70,30,0.18), transparent 70%),
+        radial-gradient(1.5px 1.5px at 78% 18%, rgba(110,80,40,0.15), transparent 70%),
+        radial-gradient(2.5px 2.5px at 35% 78%, rgba(120,80,40,0.14), transparent 70%),
+        radial-gradient(1px 1px at 88% 64%, rgba(110,70,30,0.18), transparent 70%),
+        radial-gradient(2px 2px at 58% 42%, rgba(110,70,30,0.12), transparent 70%),
+        radial-gradient(1.5px 1.5px at 22% 55%, rgba(120,80,40,0.13), transparent 70%);
+}
+/* Lift normal flow content above the texture pseudo-element, BUT
+ * leave .theme-switcher (which is position: fixed in the base CSS)
+ * alone so it stays pinned to the corner. */
+:root[data-theme="vintage"] body > *:not(.theme-switcher) {
+    position: relative;
+    z-index: 1;
+}
+
+:root[data-theme="vintage"] body {
+    line-height: 1.6;
+    font-feature-settings: "kern", "liga";
+}
+
+:root[data-theme="vintage"] main {
+    padding: 1.75rem 2.25rem 5rem;
+}
+
+/* ---- Typography ---- */
+:root[data-theme="vintage"] h1,
+:root[data-theme="vintage"] h2,
+:root[data-theme="vintage"] h3,
+:root[data-theme="vintage"] h4 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+}
+:root[data-theme="vintage"] h1 { font-size: 2.6rem; line-height: 1.05; }
+:root[data-theme="vintage"] h2 { font-size: 1.4rem; }
+
+/* ---- Generic buttons (inkstamp style) ---- */
+:root[data-theme="vintage"] button,
+:root[data-theme="vintage"] .workspace-open,
+:root[data-theme="vintage"] .settings-link {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--text);
+    padding: 0.45rem 0.85rem;
+    transition: background 0.15s, color 0.15s;
+}
+:root[data-theme="vintage"] button:hover:not(:disabled),
+:root[data-theme="vintage"] .workspace-open:hover,
+:root[data-theme="vintage"] .settings-link:hover {
+    background: var(--text);
+    color: var(--surface);
+}
+:root[data-theme="vintage"] button.primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+}
+:root[data-theme="vintage"] button.primary:hover:not(:disabled) {
+    background: #8a2a20;
+    border-color: #8a2a20;
+    filter: none;
+}
+:root[data-theme="vintage"] .delete-button {
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+}
+
+/* ---- Inputs / selects ---- */
+:root[data-theme="vintage"] input[type="text"],
+:root[data-theme="vintage"] input[type="email"],
+:root[data-theme="vintage"] input[type="password"],
+:root[data-theme="vintage"] textarea,
+:root[data-theme="vintage"] select {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 0.5rem 0.7rem;
+    font-family: var(--font-body);
+}
+:root[data-theme="vintage"] input::placeholder,
+:root[data-theme="vintage"] textarea::placeholder {
+    color: var(--muted-2);
+    font-style: italic;
+}
+
+/* ============================================================
+ *  Page header  /  back-link  /  workspaces masthead
+ * ============================================================ */
+
+:root[data-theme="vintage"] .page-header,
+:root[data-theme="vintage"] .settings-header,
+:root[data-theme="vintage"] .board-header {
+    align-items: flex-end;
+    gap: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+:root[data-theme="vintage"] .page-header h1,
+:root[data-theme="vintage"] .settings-header h1,
+:root[data-theme="vintage"] .board-header h1 {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+/* Back link → mono eyebrow with arrow */
+:root[data-theme="vintage"] .back-link {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+}
+:root[data-theme="vintage"] .back-link:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* Settings link → small mono button */
+:root[data-theme="vintage"] .settings-link {
+    margin-left: auto;
+}
+
+/* ============================================================
+ *  Workspaces list  — library-card entries with sequence stamps
+ * ============================================================ */
+
+:root[data-theme="vintage"] .workspace-create {
+    margin-bottom: 1.5rem;
+    gap: 0.75rem;
+}
+:root[data-theme="vintage"] .workspace-create input[type="text"] {
+    border-style: dashed;
+    padding: 0.9rem 1rem;
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    background: transparent;
+}
+
+:root[data-theme="vintage"] .workspace-list {
+    counter-reset: ws;
+    gap: 0.85rem;
+}
+:root[data-theme="vintage"] .workspace-item {
+    counter-increment: ws;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1rem 1.1rem 1rem 3.4rem;
+    position: relative;
+    gap: 0.75rem;
+    align-items: center;
+}
+/* Red marginal rule on the left edge */
+:root[data-theme="vintage"] .workspace-item::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.8;
+}
+/* Sequence number — No. 01 marginalia */
+:root[data-theme="vintage"] .workspace-item::before {
+    content: "№ " counter(ws, decimal-leading-zero);
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .workspace-item:hover {
+    transform: translateX(2px);
+    box-shadow: -3px 3px 0 var(--border-faint);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+:root[data-theme="vintage"] .workspace-drag-handle {
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .workspace-rename input[type="text"] {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    border: 1px solid transparent;
+    padding: 0.25rem 0.4rem;
+    background: transparent;
+}
+:root[data-theme="vintage"] .workspace-rename input[type="text"]:focus {
+    border-color: var(--border-faint);
+    background: rgba(255,255,255,0.3);
+    outline: none;
+}
+
+/* ============================================================
+ *  Board (Kanban) view
+ * ============================================================ */
+
+:root[data-theme="vintage"] .board-columns {
+    gap: 1.5rem;
+    padding-top: 0.5rem;
+}
+
+:root[data-theme="vintage"] .board-column {
+    flex: 0 0 18rem;
+    background: transparent;
+    padding: 0;
+    gap: 0.75rem;
+}
+
+/* Column title as an ink stamp. Uses Special Elite + a hairline
+ * border; ink color alternates per column via :nth-of-type. */
+:root[data-theme="vintage"] .board-column-title {
+    display: inline-block;
+    align-self: flex-start;
+    font-family: var(--font-stamp);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    padding: 0.32rem 0.7rem 0.26rem;
+    margin: 0 0 0.6rem;
+    background: rgba(246, 238, 216, 0.5);
+}
+:root[data-theme="vintage"] .board-column:nth-of-type(2) .board-column-title {
+    color: var(--text);
+    border-color: var(--text);
+}
+:root[data-theme="vintage"] .board-column:nth-of-type(3) .board-column-title {
+    color: #4d6446;
+    border-color: #4d6446;
+}
+
+:root[data-theme="vintage"] .board-cards {
+    gap: 0.65rem;
+}
+
+/* Cards = ruled index cards with a red margin line */
+:root[data-theme="vintage"] .board-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.85rem 1rem 0.85rem 1.15rem;
+    position: relative;
+    font-size: 0.95rem;
+    /* faint horizontal rule under the title row */
+    background-image:
+        linear-gradient(to bottom,
+            transparent 0,
+            transparent 1.9rem,
+            rgba(170, 130, 70, 0.20) 1.9rem,
+            rgba(170, 130, 70, 0.20) calc(1.9rem + 1px),
+            transparent calc(1.9rem + 1px));
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+:root[data-theme="vintage"] .board-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: var(--accent);
+    opacity: 0.55;
+}
+:root[data-theme="vintage"] .board-card:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0 var(--border-faint);
+}
+:root[data-theme="vintage"] .board-card-link {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    line-height: 1.15;
+}
+:root[data-theme="vintage"] .board-card-link:hover { color: var(--accent); }
+
+/* "New report" / add-card slot — dashed manila placeholder */
+:root[data-theme="vintage"] .board-add-card input[type="text"] {
+    border: 1px dashed var(--muted-2);
+    padding: 0.7rem 0.85rem;
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+}
+:root[data-theme="vintage"] .board-add-card input[type="text"]:focus {
+    border-style: solid;
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+}
+
+/* ============================================================
+ *  Report (note) view
+ * ============================================================ */
+
+:root[data-theme="vintage"] main:has(.report-layout) {
+    max-width: 84rem;
+}
+
+:root[data-theme="vintage"] .report-header {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 1.25rem;
+}
+
+:root[data-theme="vintage"] .report-form { gap: 1rem; }
+
+/* Title input: huge display serif, no chrome until focused */
+:root[data-theme="vintage"] .report-title {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 400;
+    line-height: 1.05;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px dashed transparent;
+    padding: 0.4rem 0.2rem;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.01em;
+    box-shadow: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+:root[data-theme="vintage"] .report-title:focus {
+    outline: none;
+    border-bottom-color: var(--border-faint);
+}
+
+/* Meta strip: Board / Importance / Tags, bracketed by hairline rules */
+:root[data-theme="vintage"] .report-fields {
+    gap: 1.75rem;
+    align-items: flex-end;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+}
+:root[data-theme="vintage"] .report-field {
+    gap: 0.4rem;
+}
+:root[data-theme="vintage"] .report-field > span {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .report-field input,
+:root[data-theme="vintage"] .report-field select {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-faint);
+    border-radius: 0;
+    padding: 0.25rem 0.1rem 0.35rem;
+    font-size: 1rem;
+    color: var(--text);
+}
+:root[data-theme="vintage"] .report-field input:focus,
+:root[data-theme="vintage"] .report-field select:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+}
+
+/* Tags input as a manila-tag-tinted strip */
+:root[data-theme="vintage"] .report-field-tags input {
+    background: linear-gradient(to bottom, transparent 60%, rgba(217, 184, 122, 0.30) 60%);
+    padding-left: 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+/* ---- Quill editor surface ---- */
+
+:root[data-theme="vintage"] .ql-toolbar.ql-snow {
+    border: none;
+    border-bottom: 1px solid var(--border-faint);
+    background: transparent;
+    padding: 0.45rem 0;
+}
+:root[data-theme="vintage"] .ql-toolbar.ql-snow .ql-stroke { stroke: var(--text); }
+:root[data-theme="vintage"] .ql-toolbar.ql-snow .ql-fill { fill: var(--text); }
+:root[data-theme="vintage"] .ql-toolbar.ql-snow .ql-picker-label { color: var(--text); }
+:root[data-theme="vintage"] .ql-toolbar.ql-snow button:hover .ql-stroke,
+:root[data-theme="vintage"] .ql-toolbar.ql-snow button.ql-active .ql-stroke {
+    stroke: var(--accent);
+}
+:root[data-theme="vintage"] .ql-toolbar.ql-snow button:hover .ql-fill,
+:root[data-theme="vintage"] .ql-toolbar.ql-snow button.ql-active .ql-fill {
+    fill: var(--accent);
+}
+
+:root[data-theme="vintage"] .ql-container.ql-snow {
+    border: none;
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.65;
+}
+:root[data-theme="vintage"] .ql-editor {
+    background: transparent;
+    color: var(--text);
+    padding: 1.5rem 0;
+}
+:root[data-theme="vintage"] .ql-editor h1,
+:root[data-theme="vintage"] .ql-editor h2 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    margin-top: 1.25em;
+    margin-bottom: 0.4em;
+    line-height: 1.1;
+}
+:root[data-theme="vintage"] .ql-editor h1 { font-size: 2.1rem; }
+:root[data-theme="vintage"] .ql-editor h2 { font-size: 1.55rem; font-style: italic; }
+/* Drop-cap on the first paragraph after the first heading */
+:root[data-theme="vintage"] .ql-editor h1 + p::first-letter {
+    font-family: var(--font-heading);
+    float: left;
+    font-size: 4.2rem;
+    line-height: 0.86;
+    padding: 0.35rem 0.6rem 0 0;
+    color: var(--accent);
+}
+:root[data-theme="vintage"] .ql-editor blockquote {
+    border-left: 3px solid var(--accent);
+    margin-left: 0;
+    padding-left: 1rem;
+    color: var(--muted);
+    font-style: italic;
+}
+:root[data-theme="vintage"] .ql-editor img {
+    border: 1px solid var(--border);
+    padding: 0.45rem;
+    background: var(--surface);
+    max-width: 100%;
+}
+:root[data-theme="vintage"] .ql-editor a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+}
+:root[data-theme="vintage"] .ql-snow .ql-editor pre.ql-syntax {
+    border: 1px solid var(--border);
+    border-radius: 0;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+/* ---- Attachment / actions / timestamps ---- */
+:root[data-theme="vintage"] .report-attachment-upload {
+    border-top: 1px solid var(--border-faint);
+    padding-top: 1rem;
+    gap: 1.25rem;
+}
+:root[data-theme="vintage"] .report-attach-hint,
+:root[data-theme="vintage"] .report-timestamps {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .report-actions {
+    gap: 1.25rem;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-faint);
+}
+:root[data-theme="vintage"] button.primary {
+    padding: 0.55rem 1.4rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+}
+
+/* ============================================================
+ *  Checklist sidebar — ruled paper + hand-drawn checkboxes
+ * ============================================================ */
+
+:root[data-theme="vintage"] .report-checklist-section {
+    border: 1px solid var(--border);
+    background:
+        linear-gradient(var(--surface), var(--surface)),
+        repeating-linear-gradient(to bottom,
+            transparent 0 2.1rem,
+            rgba(170, 130, 70, 0.18) 2.1rem 2.15rem);
+    padding: 1.1rem 1.25rem;
+    margin-top: 0;
+}
+
+:root[data-theme="vintage"] .report-checklist-header {
+    border-bottom: 1px dotted var(--border-faint);
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.8rem;
+}
+:root[data-theme="vintage"] .report-checklist-header h2 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-style: normal;
+    font-weight: 400;
+}
+
+:root[data-theme="vintage"] .checklist-clear-btn {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    border-color: transparent;
+}
+:root[data-theme="vintage"] .checklist-clear-btn:hover:not(:disabled) {
+    background: var(--danger-hover-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+}
+
+:root[data-theme="vintage"] .checklist { gap: 0; }
+:root[data-theme="vintage"] .checklist-item {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dotted var(--border-faint);
+    padding: 0.55rem 0.1rem;
+    border-radius: 0;
+}
+:root[data-theme="vintage"] .checklist-item:last-of-type { border-bottom: none; }
+
+:root[data-theme="vintage"] .checklist-text {
+    font-size: 1rem;
+    color: var(--text);
+}
+:root[data-theme="vintage"] .checklist-text.done {
+    color: var(--muted-2);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+/* Hand-drawn checkbox: native appearance off, square with slight
+ * rotation, X drawn via two crossed gradient strokes when checked. */
+:root[data-theme="vintage"] .checklist input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 1.5px solid var(--text);
+    background: var(--surface);
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+:root[data-theme="vintage"] .checklist input[type="checkbox"]:hover {
+    border-color: var(--accent);
+}
+:root[data-theme="vintage"] .checklist input[type="checkbox"]:checked {
+    border-color: var(--accent);
+}
+:root[data-theme="vintage"] .checklist input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: -3px -2px -3px -2px;
+    background:
+        linear-gradient(45deg,  transparent 44%, var(--accent) 46%, var(--accent) 54%, transparent 56%),
+        linear-gradient(-45deg, transparent 44%, var(--accent) 46%, var(--accent) 54%, transparent 56%);
+    opacity: 0.9;
+}
+
+:root[data-theme="vintage"] .checklist-delete-btn {
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .checklist-delete-btn:hover {
+    background: transparent;
+    color: var(--danger-text);
+}
+
+:root[data-theme="vintage"] .checklist-add input[type="text"] {
+    border: 1px dashed var(--muted-2);
+    background: transparent;
+    padding: 0.5rem 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+:root[data-theme="vintage"] .checklist-add input[type="text"]:focus {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--text);
+    background: var(--accent-soft);
+}
+
+/* ============================================================
+ *  Settings page — same library-card treatment as workspaces
+ * ============================================================ */
+
+:root[data-theme="vintage"] .settings-section h2 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    border-bottom: 1px solid var(--border-faint);
+    padding-bottom: 0.4rem;
+}
+:root[data-theme="vintage"] .settings-description {
+    font-style: italic;
+    color: var(--muted);
+}
+:root[data-theme="vintage"] .settings-list { counter-reset: st; gap: 0.6rem; }
+:root[data-theme="vintage"] .settings-item {
+    counter-increment: st;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.7rem 0.85rem 0.7rem 3rem;
+    position: relative;
+    border-radius: 0;
+}
+:root[data-theme="vintage"] .settings-item::before {
+    content: counter(st, decimal-leading-zero);
+    position: absolute;
+    left: 0.7rem; top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .settings-count {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+:root[data-theme="vintage"] .settings-rename input[type="text"] {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    border: 1px solid transparent;
+    background: transparent;
+}
+:root[data-theme="vintage"] .settings-rename input[type="text"]:focus {
+    border-color: var(--border-faint);
+    background: rgba(255,255,255,0.3);
+    outline: none;
+}
+:root[data-theme="vintage"] .settings-add input[type="text"] {
+    border: 1px dashed var(--muted-2);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.6rem 0.8rem;
+}
+:root[data-theme="vintage"] .settings-add input[type="text"]:focus {
+    border-style: solid; border-color: var(--accent);
+    color: var(--text); background: var(--accent-soft);
+}
+
+/* ============================================================
+ *  Filter panel  (board view)
+ * ============================================================ */
+
+:root[data-theme="vintage"] .filter-toggle {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.72rem;
+}
+:root[data-theme="vintage"] .filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+}
+:root[data-theme="vintage"] .filter-section-header h3 {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-style: normal;
+}
+:root[data-theme="vintage"] .filter-tag-search {
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 0;
+}
+:root[data-theme="vintage"] .filter-checkbox { font-size: 0.92rem; }
+:root[data-theme="vintage"] .filter-checkbox input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0.95rem; height: 0.95rem;
+    border: 1.5px solid var(--text);
+    background: var(--surface);
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+:root[data-theme="vintage"] .filter-checkbox input[type="checkbox"]:checked {
+    border-color: var(--accent);
+}
+:root[data-theme="vintage"] .filter-checkbox input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute; inset: -3px -2px -3px -2px;
+    background:
+        linear-gradient(45deg,  transparent 44%, var(--accent) 46%, var(--accent) 54%, transparent 56%),
+        linear-gradient(-45deg, transparent 44%, var(--accent) 46%, var(--accent) 54%, transparent 56%);
+    opacity: 0.9;
+}
+:root[data-theme="vintage"] .filter-summary {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+
+/* ============================================================
+ *  Theme switcher (so it matches when vintage is active)
+ * ============================================================ */
+
+:root[data-theme="vintage"] .theme-switcher {
+    background: var(--surface);
+    border-color: var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+:root[data-theme="vintage"] .theme-switcher select {
+    font-family: inherit;
+}
+
+/* ============================================================
+ *  Flashes
+ * ============================================================ */
+
+:root[data-theme="vintage"] .flash {
+    border-radius: 0;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+/* ============================================================
+ *  Profile: Paper 2 — exactly your existing `paper` theme, but with
+ *  the warm fibers/foxing/vignette texture overlay layered on the
+ *  body. All other tokens (palette, fonts, radii) match `paper` so
+ *  you can A/B them without anything else shifting.
+ *
+ *  Append this block to your app.css and add
+ *      <option value="paper2">Paper 2</option>
+ *  to the #theme-select <select>.
+ * ============================================================ */
+
+:root[data-theme="paper2"] {
+    /* Identical palette to [data-theme="paper"] */
+    --bg: #faf6ee;
+    --surface: #fffdf6;
+    --border: #d8cfbe;
+    --text: #2a2520;
+    --muted: #6f6256;
+    --accent: #8b3a3a;
+    --accent-fg: #fffdf6;
+    --column-bg: #f0e8d6;
+    --hover-tint: #efe5cb;
+    --error-bg: #f5dcdc;
+    --error-text: #6e1e1e;
+    --error-border: #e0b6b6;
+    --danger-text: #8b2020;
+    --danger-border: #e0b6b6;
+    --danger-hover-bg: #f5dcdc;
+    --ghost-bg: #efe5cb;
+
+    --font-body: "Charter", "Iowan Old Style", Georgia, "Cambria", "Times New Roman", serif;
+    --font-heading: var(--font-body);
+    --radius: 2px;
+    --radius-lg: 2px;
+    --card-shadow: none;
+    --main-max-width: 56rem;
+}
+
+/* ---- Paper texture overlay -----------------------------------
+ * Three layered backgrounds (fibers + foxing + vignette), pinned
+ * to the viewport, multiply-blended over the page. pointer-events
+ * none so nothing is blocked. Tuned a touch lighter than vintage
+ * since paper2 already has a near-white surface. */
+:root[data-theme="paper2"] body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: multiply;
+    opacity: 0.75;
+    background:
+        radial-gradient(ellipse at center,
+            transparent 0%, transparent 55%,
+            rgba(82, 60, 30, 0.06) 85%,
+            rgba(60, 42, 18, 0.14) 100%),
+        repeating-linear-gradient(0deg,
+            rgba(120, 90, 50, 0.0) 0px,
+            rgba(120, 90, 50, 0.0) 2px,
+            rgba(120, 90, 50, 0.014) 3px,
+            rgba(120, 90, 50, 0.0) 4px),
+        radial-gradient(2px 2px at 12% 22%, rgba(120,70,30,0.15), transparent 70%),
+        radial-gradient(1.5px 1.5px at 78% 18%, rgba(110,80,40,0.12), transparent 70%),
+        radial-gradient(2.5px 2.5px at 35% 78%, rgba(120,80,40,0.11), transparent 70%),
+        radial-gradient(1px 1px at 88% 64%, rgba(110,70,30,0.15), transparent 70%),
+        radial-gradient(2px 2px at 58% 42%, rgba(110,70,30,0.10), transparent 70%),
+        radial-gradient(1.5px 1.5px at 22% 55%, rgba(120,80,40,0.11), transparent 70%);
+}
+
+/* Lift normal flow content above the texture pseudo-element, BUT
+ * leave .theme-switcher (which is position: fixed in the base CSS)
+ * alone so it stays pinned to the corner. */
+:root[data-theme="paper2"] body > *:not(.theme-switcher) {
+    position: relative;
+    z-index: 1;
+}
+
+/* The same surface-level rules `paper` applies, kept here verbatim so
+ * paper2 is self-contained and you can ship it without editing the
+ * existing paper block. */
+:root[data-theme="paper2"] body { line-height: 1.65; }
+:root[data-theme="paper2"] main { padding: 1.5rem 2rem; }
+:root[data-theme="paper2"] h1 { font-weight: 600; letter-spacing: -0.01em; }
+:root[data-theme="paper2"] h2 { font-style: italic; font-weight: 500; }
+:root[data-theme="paper2"] .board-card { box-shadow: none; border-color: var(--border); }
+:root[data-theme="paper2"] .workspace-item,
+:root[data-theme="paper2"] .settings-item { box-shadow: none; }
+:root[data-theme="paper2"] button { font-family: var(--font-body); }
+
+/* Make the surface slightly more translucent so the paper texture
+ * shows through the cards — otherwise the foxing pattern stops at
+ * the card edges and looks pasted-on. */
+:root[data-theme="paper2"] .board-card,
+:root[data-theme="paper2"] .workspace-item,
+:root[data-theme="paper2"] .settings-item,
+:root[data-theme="paper2"] .checklist-item {
+    background: rgba(255, 253, 246, 0.65);
+}
+
+/* ---- Satisfying checkboxes (ported from the vintage theme) -------
+ * Native control off, hand-drawn square in the theme accent.
+ * Checkmark drawn with two borders on a rotated pseudo-element.
+ * Soft pop on toggle. */
+:root[data-theme="paper2"] .checklist input[type="checkbox"],
+:root[data-theme="paper2"] .filter-checkbox input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1.5px solid var(--text);
+    background: var(--surface);
+    margin: 0 0.15rem 0 0;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.15s ease,
+                transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+:root[data-theme="paper2"] .checklist input[type="checkbox"]:hover,
+:root[data-theme="paper2"] .filter-checkbox input[type="checkbox"]:hover {
+    border-color: var(--accent);
+    transform: scale(1.06);
+}
+:root[data-theme="paper2"] .checklist input[type="checkbox"]:active,
+:root[data-theme="paper2"] .filter-checkbox input[type="checkbox"]:active {
+    transform: scale(0.94);
+}
+:root[data-theme="paper2"] .checklist input[type="checkbox"]:checked,
+:root[data-theme="paper2"] .filter-checkbox input[type="checkbox"]:checked {
+    border-color: var(--accent);
+    background: var(--surface);
+}
+/* The check: a rotated rectangle with right + bottom borders forms a √
+ *
+ * No keyframe animation here on purpose — the checklist on the report
+ * view uses hx-swap="outerHTML", so every htmx toggle re-mounts the
+ * whole list. A keyframe `animation` on :checked::after would fire on
+ * every already-checked box after each swap (visible as a chorus of
+ * pops). The click feedback you feel comes from the active-state
+ * scale-down on the box itself, which fires on mousedown before any
+ * network request, so the interaction still feels snappy. */
+:root[data-theme="paper2"] .checklist input[type="checkbox"]:checked::after,
+:root[data-theme="paper2"] .filter-checkbox input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 32%;
+    top: 6%;
+    width: 30%;
+    height: 62%;
+    border-right: 2.5px solid var(--accent);
+    border-bottom: 2.5px solid var(--accent);
+    transform: rotate(42deg);
+    transform-origin: center;
+}
+
+/* Give the checklist row a touch more breathing room so the bigger
+ * boxes sit comfortably. */
+:root[data-theme="paper2"] .checklist-item {
+    padding: 0.55rem 0.7rem;
+    gap: 0.7rem;
+}
+
