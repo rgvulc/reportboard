@@ -941,6 +941,15 @@ input::placeholder, textarea::placeholder {
     color: var(--muted);
 }
 
+/* The h2 bracket decoration ("[ Checklist ]") overflows the narrow
+   16rem checklist sidebar and drops the closing "]" to the next line.
+   Slightly smaller + no-wrap keeps it on one line in both terminals. */
+:root[data-theme="terminal"] .report-checklist-header h2,
+:root[data-theme="terminal2"] .report-checklist-header h2 {
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
 :root[data-theme="terminal2"] .board-card {
     box-shadow: none;
 }
