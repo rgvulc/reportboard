@@ -15,8 +15,9 @@ importance levels.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install flask markdown pyyaml pytest
-.venv/bin/flask --app app init-db
+source .venv/bin/activate
+pip install -e .[dev]
+flask --app app init-db
 ```
 
 `init-db` is destructive: it removes any existing `data/reportboard.db` and
