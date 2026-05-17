@@ -1115,8 +1115,21 @@ input::placeholder, textarea::placeholder {
     background: var(--hover-tint);
 }
 
+/* The generic clean `button` rule forces a transparent background, but
+   base `button.primary` keeps color:var(--accent-fg) (near-white) — that
+   left the Save button as near-white text on the cream page. Restore the
+   accent fill so the primary CTA reads, and keep it on hover (the clean
+   button:hover rule would otherwise swap in the light hover-tint). */
 :root[data-theme="clean"] button.primary {
     font-weight: 400;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+}
+
+:root[data-theme="clean"] button.primary:hover:not(:disabled) {
+    background: var(--accent);
+    filter: brightness(0.95);
 }
 
 /* ============================================================
