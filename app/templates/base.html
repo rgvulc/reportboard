@@ -7,8 +7,8 @@
     <script>
         (function () {
             try {
-                var t = localStorage.getItem('theme');
-                if (t && t !== 'default') {
+                var t = localStorage.getItem('theme') || 'paper';
+                if (t !== 'default') {
                     document.documentElement.setAttribute('data-theme', t);
                 }
             } catch (e) { /* localStorage may be unavailable */ }

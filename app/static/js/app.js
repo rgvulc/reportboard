@@ -223,8 +223,8 @@
         if (!select || select._themeInitialized) return;
         select._themeInitialized = true;
 
-        var current = 'default';
-        try { current = localStorage.getItem('theme') || 'default'; } catch (e) {}
+        var current = 'paper';
+        try { current = localStorage.getItem('theme') || 'paper'; } catch (e) {}
         select.value = current;
 
         select.addEventListener('change', function () {
@@ -232,11 +232,13 @@
             try {
                 if (v === 'default') {
                     document.documentElement.removeAttribute('data-theme');
-                    localStorage.removeItem('theme');
                 } else {
                     document.documentElement.setAttribute('data-theme', v);
-                    localStorage.setItem('theme', v);
                 }
+                // Persist even 'default' explicitly: an absent key now means
+                // "no preference" and falls back to Paper, so choosing the
+                // plain theme must be recorded so it sticks.
+                localStorage.setItem('theme', v);
             } catch (e) { console.error(e); }
         });
     }
