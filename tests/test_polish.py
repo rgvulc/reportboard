@@ -98,3 +98,34 @@ def test_detail_page_renders_datalist_with_existing_tags(client, app):
     assert 'list="tag-suggestions"' in body
     assert '<option value="ml"></option>' in body
     assert '<option value="transformers"></option>' in body
+
+
+def test_detail_page_ships_auto_linkify(client, app):
+    """The editor must auto-link bare URLs. This wiring was once silently
+    dropped in a refactor, leaving typed/pasted URLs as unstyled plain text
+    with no link tooltip; guard against that regressing again."""
+    client.post("/workspaces", data={"name": "WS"})
+    with app.app_context():
+        ws_id = get_db().execute("SELECT id FROM workspace").fetchone()["id"]
+        todo_id = get_db().execute(
+            "SELECT id FROM board WHERE name='Todo'"
+        ).fetchone()["id"]
+    client.post(
+        f"/workspaces/{ws_id}/reports",
+        data={"title": "x", "board_id": todo_id},
+    )
+    with app.app_context():
+        report_id = get_db().execute("SELECT id FROM report").fetchone()["id"]
+
+    body = client.get(f"/reports/{report_id}").get_data(as_text=True)
+
+    # The linkify routine is defined...
+    assert "function linkifyDocument()" in body
+    # ...run once after hydration so stored bare URLs get linked...
+    assert body.count("linkifyDocument()") >= 3
+    # ...wired to user edits...
+    assert "quill.on('text-change'" in body
+    # ...and run on submit so a trailing-terminator-less URL still links.
+    assert "form.addEventListener('submit'" in body
+    # 'link' must survive the paste attribute filter for links to persist.
+    assert "'bold', 'italic', 'strike', 'code', 'link'," in body
