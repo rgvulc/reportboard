@@ -1,10 +1,12 @@
 """Integration tests for the attachments routes and the save-time cleanup."""
 
 import io
+import json
 from pathlib import Path
 
 from app.attachments import attachment_path, report_dir
 from app.db import get_db
+from app.delta_md import md_to_delta
 
 
 # --- helpers ---
@@ -36,7 +38,8 @@ def _upload(client, report_id, filename, content=b"x", mimetype="image/png"):
 def _save_report(client, report_id, board_id, content):
     return client.post(
         f"/reports/{report_id}",
-        data={"title": "T", "board_id": board_id, "tags": "", "content": content},
+        data={"title": "T", "board_id": board_id, "tags": "",
+              "content_delta": json.dumps(md_to_delta(content))},
     )
 
 

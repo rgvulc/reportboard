@@ -199,17 +199,11 @@ class TestUrlRewrite:
         )
         assert out == "![](attachments/99/foo.png)"
 
-    def test_v3_import_inverts_export(self):
+    def test_import_inverts_export(self):
         original = "![](/attachments/42/foo.png) [x](/attachments/42/y.pdf)"
         exported = exporter.rewrite_urls_for_export(original)
-        restored = importer.rewrite_urls_for_import_v3(exported)
+        restored = importer.rewrite_urls_for_import(exported)
         assert restored == original
-
-    def test_v1v2_import_inverse_preserved(self):
-        """Legacy v1/v2 importer still expands `attachments/<file>` correctly."""
-        legacy_body = "![](attachments/foo.png)"
-        restored = importer.rewrite_urls_for_import(legacy_body, 42)
-        assert restored == "![](/attachments/42/foo.png)"
 
 
 class TestFrontmatterParse:
@@ -356,7 +350,7 @@ class TestValidation:
 
     def test_report_references_unknown_board(self, app, tmp_path):
         manifest = {
-            "schema_version": 1,
+            "schema_version": 3,
             "boards": [{"id": 1, "name": "Todo", "position": 0}],
             "importance_levels": [],
             "tags": [],
@@ -381,7 +375,7 @@ class TestValidation:
                 "created_at": "2026-01-01 00:00:00.000",
                 "updated_at": "2026-01-01 00:00:00.000",
             }),
-            "workspaces/001-WS/Todo/001-t/report.md": report_md,
+            "workspaces/001-WS/001-t.md": report_md,
         })
         with app.app_context(), pytest.raises(importer.ImportError, match="board"):
             importer.import_from_zip(
@@ -404,7 +398,7 @@ class TestValidation:
             "---\n"
         )
         manifest = {
-            "schema_version": 1,
+            "schema_version": 3,
             "boards": [{"id": 1, "name": "Todo", "position": 0}],
             "importance_levels": [], "tags": [],
             "workspaces": [{
@@ -420,7 +414,7 @@ class TestValidation:
                 "created_at": "2026-01-01 00:00:00.000",
                 "updated_at": "2026-01-01 00:00:00.000",
             }),
-            "workspaces/001-WS/Todo/001-t/report.md": report_md,
+            "workspaces/001-WS/001-t.md": report_md,
         })
         with app.app_context(), pytest.raises(importer.ImportError, match="missing.png"):
             importer.import_from_zip(
@@ -432,7 +426,7 @@ class TestValidation:
         with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("../escape.txt", "pwned")
             zf.writestr("manifest.json", json.dumps({
-                "schema_version": 1,
+                "schema_version": 3,
                 "boards": [], "importance_levels": [],
                 "tags": [], "workspaces": [],
             }))
@@ -498,7 +492,7 @@ class TestCli:
         assert "manifest" in result.output.lower()
 
 
-# --- Flat workspace layout (schema_version 2) --------------------------------
+# --- Flat workspace layout (schema_version 3) --------------------------------
 
 class TestFlatLayout:
     def test_export_writes_flat_md_files_at_workspace_root(self, app, tmp_path):
@@ -539,105 +533,6 @@ class TestFlatLayout:
         # Report 100 owns abc.png; the path should be id-named (not slug-named).
         assert any(n.endswith("attachments/100/abc.png") for n in names), \
             f"expected attachments/100/abc.png; saw: {names}"
-
-    def test_legacy_v1_archive_still_imports(self, app, tmp_path):
-        """A pre-existing v1 export (board subfolders, schema_version=1) is
-        still importable so old backups don't break."""
-        # Hand-build a minimal v1 zip in the nested format.
-        v1_zip = tmp_path / "v1.zip"
-        manifest = {
-            "schema_version": 1,
-            "exported_at": "2026-01-01T00:00:00.000",
-            "boards": [{"id": 1, "name": "Todo", "position": 0}],
-            "importance_levels": [],
-            "tags": [],
-            "workspaces": [{
-                "id": 1, "name": "WS", "position": 0,
-                "created_at": "2026-01-01 00:00:00.000",
-                "updated_at": "2026-01-01 00:00:00.000",
-            }],
-        }
-        ws_meta = {
-            "id": 1, "name": "WS", "position": 0,
-            "created_at": "2026-01-01 00:00:00.000",
-            "updated_at": "2026-01-01 00:00:00.000",
-        }
-        report_md = (
-            "---\n"
-            "id: 1\n"
-            "board: Todo\n"
-            "importance: null\n"
-            "position: 0\n"
-            "title: Old report\n"
-            "created_at: '2026-01-01 00:00:00.000'\n"
-            "updated_at: '2026-01-01 00:00:00.000'\n"
-            "tags: []\n"
-            "checklist: []\n"
-            "attachments: []\n"
-            "---\n"
-            "Body content."
-        )
-        with zipfile.ZipFile(v1_zip, "w") as zf:
-            zf.writestr("manifest.json", json.dumps(manifest))
-            zf.writestr("workspaces/000-WS/_workspace.json",
-                        json.dumps(ws_meta))
-            # NB: the extra `Todo` board folder is what makes this v1.
-            zf.writestr("workspaces/000-WS/Todo/000-Old-report/report.md",
-                        report_md)
-
-        _wipe(app)
-        with app.app_context():
-            importer.import_from_zip(
-                get_db(), Path(app.config["ATTACHMENTS_DIR"]), v1_zip,
-            )
-            rows = list(get_db().execute(
-                "SELECT title FROM report"
-            ))
-        assert [r["title"] for r in rows] == ["Old report"]
-
-    def test_legacy_v2_archive_still_imports(self, app, tmp_path):
-        """v2 archives (per-report folders, no board nesting) are still
-        accepted on import."""
-        v2_zip = tmp_path / "v2.zip"
-        manifest = {
-            "schema_version": 2,
-            "exported_at": "2026-01-01T00:00:00.000",
-            "boards": [{"id": 1, "name": "Todo", "position": 0}],
-            "importance_levels": [],
-            "tags": [],
-            "workspaces": [{
-                "id": 1, "name": "WS", "position": 0,
-                "created_at": "2026-01-01 00:00:00.000",
-                "updated_at": "2026-01-01 00:00:00.000",
-            }],
-        }
-        ws_meta = {
-            "id": 1, "name": "WS", "position": 0,
-            "created_at": "2026-01-01 00:00:00.000",
-            "updated_at": "2026-01-01 00:00:00.000",
-        }
-        report_md = (
-            "---\nid: 1\nboard: Todo\nimportance: null\nposition: 0\n"
-            "title: v2 report\n"
-            "created_at: '2026-01-01 00:00:00.000'\n"
-            "updated_at: '2026-01-01 00:00:00.000'\n"
-            "tags: []\nchecklist: []\nattachments: []\n---\nBody."
-        )
-        with zipfile.ZipFile(v2_zip, "w") as zf:
-            zf.writestr("manifest.json", json.dumps(manifest))
-            zf.writestr("workspaces/000-WS/_workspace.json",
-                        json.dumps(ws_meta))
-            zf.writestr("workspaces/000-WS/000-v2-report/report.md", report_md)
-
-        _wipe(app)
-        with app.app_context():
-            importer.import_from_zip(
-                get_db(), Path(app.config["ATTACHMENTS_DIR"]), v2_zip,
-            )
-            titles = [r["title"] for r in get_db().execute(
-                "SELECT title FROM report"
-            )]
-        assert titles == ["v2 report"]
 
 
 # --- Slug collisions --------------------------------------------------------

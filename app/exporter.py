@@ -39,11 +39,9 @@ import yaml
 from .delta_md import delta_to_md
 
 
-# v3 (current): workspace dir contains _workspace.json + flat .md files +
-#               a single attachments/ folder whose subfolders are named by
-#               report id. Body URLs are `attachments/<id>/<file>`.
-# v2 (legacy):  ws_dir/<NNN>-<slug>/{report.md, attachments/<file>}.
-# v1 (legacy):  ws_dir/<board>/<NNN>-<slug>/{report.md, attachments/<file>}.
+# schema_version 3: workspace dir contains _workspace.json + flat .md files +
+#                    a single attachments/ folder whose subfolders are named by
+#                    report id. Body URLs are `attachments/<id>/<file>`.
 SCHEMA_VERSION = 3
 
 _SLUG_MAX_LEN = 60

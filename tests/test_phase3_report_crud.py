@@ -1,4 +1,12 @@
+import json
+
 from app.db import get_db
+from app.delta_md import md_to_delta
+
+
+def _cd(md: str = "") -> str:
+    """Build a content_delta form value from a markdown fixture."""
+    return json.dumps(md_to_delta(md))
 
 
 def _setup(client, app):
@@ -57,7 +65,7 @@ def test_get_report_renders_title_content_board_importance_tags(client, app):
             "board_id": _board_id(app, "Complete"),
             "importance_id": _importance_id(app, "High"),
             "tags": "alpha, beta",
-            "content": "Some **markdown** text",
+            "content_delta": _cd("Some **markdown** text"),
         },
     )
 
@@ -93,7 +101,7 @@ def test_save_updates_fields_and_bumps_updated_at_only(client, app):
             "board_id": done_id,
             "importance_id": high_id,
             "tags": "",
-            "content": "new content",
+            "content_delta": _cd("new content"),
         },
     )
     assert response.status_code in (200, 302)
@@ -211,7 +219,7 @@ def test_save_with_blank_title_returns_400(client, app):
 
     response = client.post(
         f"/reports/{report_id}",
-        data={"title": "  ", "board_id": todo_id, "tags": "", "content": "x"},
+        data={"title": "  ", "board_id": todo_id, "tags": "", "content_delta": _cd("x")},
     )
     assert response.status_code == 400
 

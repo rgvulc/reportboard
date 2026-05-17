@@ -1,15 +1,14 @@
 """Tests for delta-only content storage.
 
 After the triple-storage flip, `report.content_delta` is the sole canonical
-content column. The save route accepts either a raw `content_delta` JSON
-field (what the browser editor posts) or a legacy `content` markdown field
-(backwards compat for tests / curl), and canonicalises before storing.
+content column. The save route accepts the `content_delta` JSON field (what
+the browser editor posts) and canonicalises it before storing.
 """
 
 import json
 
 from app.db import get_db
-from app.delta_md import canonicalize_delta, delta_to_md, md_to_delta
+from app.delta_md import canonicalize_delta, md_to_delta
 
 
 def _setup(client, app):
@@ -70,24 +69,7 @@ class TestSaveAcceptsDelta:
         assert _stored_delta(app, rid) == canonicalize_delta(delta)
 
 
-class TestSaveBackwardsCompat:
-    def test_save_with_markdown_content_converts_to_delta(self, client, app):
-        """Legacy form field `content=<markdown>` is converted on the server."""
-        _, todo_id, rid = _setup(client, app)
-        resp = client.post(
-            f"/reports/{rid}",
-            data={
-                "title": "T",
-                "board_id": todo_id,
-                "tags": "",
-                "content": "Hello **world**",
-            },
-        )
-        assert resp.status_code in (200, 302)
-        stored = _stored_delta(app, rid)
-        # Round-trip the stored Delta back to markdown — content should match.
-        assert delta_to_md(stored) == "Hello **world**"
-
+class TestSaveContentNormalization:
     def test_save_with_empty_content_stores_canonical_empty_delta(self, client, app):
         _, todo_id, rid = _setup(client, app)
         resp = client.post(
@@ -188,66 +170,3 @@ class TestAttachmentCleanupOnDeltaContent:
                 (rid, filename),
             ).fetchone()
             assert row is None
-
-
-class TestMigrationCommand:
-    def test_migrate_is_noop_on_fresh_schema(self, app, runner):
-        result = runner.invoke(args=["migrate-to-delta-only"])
-        assert result.exit_code == 0
-        # Fresh schema already has content_delta only.
-        assert "dropped columns: (none)" in result.output.lower()
-
-    def test_migrate_backfills_from_legacy_content_column(self, app, runner):
-        """Simulate a pre-migration DB: report has only the old `content`
-        column. The command should add content_delta, populate it from the
-        markdown, and drop the legacy column."""
-        with app.app_context():
-            db = get_db()
-            db.execute("PRAGMA foreign_keys = OFF")
-            with db:
-                db.execute("DROP TABLE report")
-                db.execute("""
-                    CREATE TABLE report (
-                        id INTEGER PRIMARY KEY,
-                        workspace_id INTEGER NOT NULL
-                            REFERENCES workspace(id) ON DELETE CASCADE,
-                        board_id INTEGER NOT NULL REFERENCES board(id),
-                        importance_id INTEGER REFERENCES importance_level(id),
-                        title TEXT NOT NULL,
-                        content TEXT NOT NULL DEFAULT '',
-                        position INTEGER NOT NULL,
-                        created_at TIMESTAMP NOT NULL DEFAULT
-                            (strftime('%Y-%m-%d %H:%M:%f', 'now')),
-                        updated_at TIMESTAMP NOT NULL DEFAULT
-                            (strftime('%Y-%m-%d %H:%M:%f', 'now'))
-                    )
-                """)
-                db.execute(
-                    "INSERT INTO workspace (id, name, position) VALUES (1, 'WS', 0)"
-                )
-                todo_id = db.execute(
-                    "SELECT id FROM board WHERE name='Todo'"
-                ).fetchone()["id"]
-                db.execute(
-                    "INSERT INTO report (id, workspace_id, board_id, title, "
-                    "content, position) VALUES (1, 1, ?, 't', "
-                    "'# Heading\n\nBody **bold**', 0)",
-                    (todo_id,),
-                )
-
-        result = runner.invoke(args=["migrate-to-delta-only"])
-        assert result.exit_code == 0, result.output
-        assert "backfilled 1 row" in result.output.lower()
-
-        with app.app_context():
-            cols = {row["name"] for row in get_db().execute(
-                "PRAGMA table_info(report)"
-            )}
-            assert "content_delta" in cols
-            assert "content" not in cols
-            row = get_db().execute(
-                "SELECT content_delta FROM report WHERE id = 1"
-            ).fetchone()
-        delta = json.loads(row["content_delta"])
-        # Verify the migrated content round-trips to the original markdown.
-        assert delta_to_md(delta) == "# Heading\n\nBody **bold**"

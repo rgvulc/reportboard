@@ -156,10 +156,6 @@ subset (color, font, alignment, etc.) — the editor's toolbar and paste
 matcher keep stored Deltas within that subset, so in practice round-trip
 is clean.
 
-Legacy archives are still accepted on import:
-- **schema_version 1** — per-board subfolders (`ws/<board>/<report>/report.md`)
-- **schema_version 2** — per-report subfolders (`ws/<report>/report.md`)
-
 ### Verify a JSON export is lossless
 
 ```bash
@@ -232,10 +228,6 @@ done
 - Video embeds are preserved through markdown via a sentinel link title:
   `[video](URL "video-embed")`. `delta_md.md_to_delta` recognises the marker
   and re-emits a video embed on import.
-- For databases predating the delta-only schema, run
-  `.venv/bin/flask --app app migrate-to-delta-only` once. It backfills
-  `content_delta` from legacy markdown and drops the obsolete columns.
-  No-op on a fresh database.
 - Attachments live on disk under `data/attachments/<report_id>/<uuid>.<ext>`
   and are reference-counted by substring scan against the report's saved
   markdown. Saving a report deletes any attachment whose

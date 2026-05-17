@@ -4,7 +4,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from .. import attachments
 from ..db import get_db
-from ..delta_md import canonicalize_delta, md_to_delta
+from ..delta_md import canonicalize_delta
 
 
 bp = Blueprint("reports", __name__)
@@ -15,21 +15,18 @@ NOW_SQL = "strftime('%Y-%m-%d %H:%M:%f', 'now')"
 def _normalize_content_delta(form) -> str:
     """Pull the canonical Delta JSON out of the submitted form.
 
-    Accepts either `content_delta` (preferred — what the browser editor posts)
-    or `content` (markdown, kept as a backwards-compat path for tests / curl
-    submissions). Returns the canonicalised Delta as a JSON string.
+    The browser editor posts `content_delta` (Quill Delta JSON). An absent
+    or empty value yields the canonical empty document. Returns the
+    canonicalised Delta as a JSON string.
     """
     raw = (form.get("content_delta") or "").strip()
-    if raw:
-        try:
-            return json.dumps(canonicalize_delta(json.loads(raw)),
-                              ensure_ascii=False, sort_keys=False)
-        except json.JSONDecodeError:
-            abort(400, description="content_delta is not valid JSON")
-    md = form.get("content") or ""
-    if not md:
+    if not raw:
         return json.dumps({"ops": [{"insert": "\n"}]}, ensure_ascii=False)
-    return json.dumps(md_to_delta(md), ensure_ascii=False)
+    try:
+        return json.dumps(canonicalize_delta(json.loads(raw)),
+                          ensure_ascii=False, sort_keys=False)
+    except json.JSONDecodeError:
+        abort(400, description="content_delta is not valid JSON")
 
 
 def _parse_tags(raw: str) -> list[str]:

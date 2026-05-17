@@ -22,11 +22,9 @@ import yaml
 from .delta_md import md_to_delta
 
 
-# v3 (current): flat .md files at workspace root + workspace-level
-#               attachments/ folder with id-named subdirs.
-# v2 (legacy):  ws_dir/<NNN>-<slug>/{report.md, attachments/<file>}.
-# v1 (legacy):  ws_dir/<board>/<NNN>-<slug>/{report.md, attachments/<file>}.
-SUPPORTED_SCHEMA_VERSIONS = {1, 2, 3}
+# schema_version 3: flat .md files at workspace root + workspace-level
+#                    attachments/ folder with id-named subdirs.
+SUPPORTED_SCHEMA_VERSIONS = {3}
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n?(.*)\Z", re.DOTALL)
 _REQUIRED_REPORT_FIELDS = {
@@ -78,18 +76,10 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return data, m.group(2)
 
 
-def rewrite_urls_for_import(content: str, report_id: int) -> str:
-    """v1/v2 inverse of exporter.rewrite_urls_for_export.
-
-    Body URLs in legacy archives are `attachments/<file>` (no id), so we
-    prepend the absolute prefix with this report's id.
-    """
-    return content.replace("attachments/", f"/attachments/{report_id}/")
-
-
-def rewrite_urls_for_import_v3(content: str) -> str:
-    """v3 inverse: the id is already in the path, so just add the leading
-    slash. `attachments/<id>/<file>` → `/attachments/<id>/<file>`."""
+def rewrite_urls_for_import(content: str) -> str:
+    """Inverse of exporter.rewrite_urls_for_export: the report id is already
+    in the path, so just add the leading slash.
+    `attachments/<id>/<file>` → `/attachments/<id>/<file>`."""
     return content.replace("attachments/", "/attachments/")
 
 
@@ -140,42 +130,7 @@ def _load_manifest(root: Path) -> dict:
     return manifest
 
 
-def _load_report(report_dir: Path) -> ParsedReport:
-    """v1/v2 loader: per-report folder containing report.md and attachments/."""
-    md_path = report_dir / "report.md"
-    if not md_path.exists():
-        raise ImportError(f"missing report.md in {report_dir}")
-    fm, body = parse_frontmatter(md_path.read_text(encoding="utf-8"))
-
-    missing = _REQUIRED_REPORT_FIELDS - fm.keys()
-    if missing:
-        raise ImportError(
-            f"report.md at {report_dir.name!r} missing fields: "
-            f"{sorted(missing)}"
-        )
-
-    att_dir = report_dir / "attachments"
-    attachment_files: dict[str, Path] = {}
-    declared = fm.get("attachments") or []
-    if not isinstance(declared, list):
-        raise ImportError(f"attachments in {report_dir.name!r} must be a list")
-    for entry in declared:
-        if not isinstance(entry, dict) or "filename" not in entry:
-            raise ImportError(
-                f"attachment entry in {report_dir.name!r} missing 'filename'"
-            )
-        src = att_dir / entry["filename"]
-        if not src.is_file():
-            raise ImportError(
-                f"attachment file missing on disk: "
-                f"{report_dir.name}/attachments/{entry['filename']}"
-            )
-        attachment_files[entry["filename"]] = src
-
-    return ParsedReport(frontmatter=fm, body=body, attachment_files=attachment_files)
-
-
-def _load_report_v3(md_path: Path, ws_attachments_dir: Path) -> ParsedReport:
+def _load_report(md_path: Path, ws_attachments_dir: Path) -> ParsedReport:
     """v3 loader: bare .md file at workspace root; attachments live at
     <ws_attachments_dir>/<report_id>/<filename>."""
     fm, body = parse_frontmatter(md_path.read_text(encoding="utf-8"))
@@ -210,7 +165,7 @@ def _load_report_v3(md_path: Path, ws_attachments_dir: Path) -> ParsedReport:
     return ParsedReport(frontmatter=fm, body=body, attachment_files=attachment_files)
 
 
-def _load_workspace(ws_dir: Path, schema_version: int = 2) -> ParsedWorkspace:
+def _load_workspace(ws_dir: Path) -> ParsedWorkspace:
     meta_path = ws_dir / "_workspace.json"
     if not meta_path.exists():
         raise ImportError(f"missing _workspace.json in {ws_dir.name!r}")
@@ -225,21 +180,11 @@ def _load_workspace(ws_dir: Path, schema_version: int = 2) -> ParsedWorkspace:
             )
 
     parsed = ParsedWorkspace(workspace_meta=meta)
-    if schema_version == 1:
-        # Legacy nested layout: ws_dir/<board_slug>/<report_dir>/
-        for board_dir in sorted(p for p in ws_dir.iterdir() if p.is_dir()):
-            for report_dir in sorted(p for p in board_dir.iterdir() if p.is_dir()):
-                parsed.reports.append(_load_report(report_dir))
-    elif schema_version == 2:
-        # Flat layout: ws_dir/<report_dir>/
-        for report_dir in sorted(p for p in ws_dir.iterdir() if p.is_dir()):
-            parsed.reports.append(_load_report(report_dir))
-    else:
-        # v3: flat .md files at workspace root + a shared attachments folder.
-        ws_attachments_dir = ws_dir / "attachments"
-        for md_path in sorted(p for p in ws_dir.iterdir()
-                              if p.is_file() and p.suffix == ".md"):
-            parsed.reports.append(_load_report_v3(md_path, ws_attachments_dir))
+    # Flat .md files at workspace root + a shared attachments folder.
+    ws_attachments_dir = ws_dir / "attachments"
+    for md_path in sorted(p for p in ws_dir.iterdir()
+                          if p.is_file() and p.suffix == ".md"):
+        parsed.reports.append(_load_report(md_path, ws_attachments_dir))
     return parsed
 
 
@@ -247,11 +192,10 @@ def load_archive(root: Path) -> ParsedArchive:
     archive_root = _find_archive_root(root)
     manifest = _load_manifest(archive_root)
     archive = ParsedArchive(manifest=manifest)
-    version = manifest.get("schema_version", 2)
     workspaces_dir = archive_root / "workspaces"
     if workspaces_dir.exists():
         for ws_dir in sorted(p for p in workspaces_dir.iterdir() if p.is_dir()):
-            archive.workspaces.append(_load_workspace(ws_dir, version))
+            archive.workspaces.append(_load_workspace(ws_dir))
     return archive
 
 
@@ -330,7 +274,6 @@ def apply(
     archive: ParsedArchive,
 ) -> None:
     manifest = archive.manifest
-    schema_version = manifest.get("schema_version", 1)
 
     tag_id_by_name: dict[str, int] = {}
     importance_id_by_name: dict[str, int] = {}
@@ -380,10 +323,7 @@ def apply(
                     importance_id_by_name[fm["importance"]]
                     if fm.get("importance") is not None else None
                 )
-                if schema_version >= 3:
-                    rebuilt_md = rewrite_urls_for_import_v3(report.body)
-                else:
-                    rebuilt_md = rewrite_urls_for_import(report.body, rid)
+                rebuilt_md = rewrite_urls_for_import(report.body)
                 content_delta = json.dumps(md_to_delta(rebuilt_md),
                                             ensure_ascii=False)
 
