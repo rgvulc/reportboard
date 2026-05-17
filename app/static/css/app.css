@@ -949,7 +949,7 @@ input::placeholder, textarea::placeholder {
     --danger-hover-bg: #f5dcdc;
     --ghost-bg: #efe5cb;
 
-    --font-body: "Iowan Old Style", "Charter", Georgia, "Cambria", "Times New Roman", serif;
+    --font-body: "Charter", "Iowan Old Style", Georgia, "Cambria", "Times New Roman", serif;
     --font-heading: var(--font-body);
     --radius: 2px;
     --radius-lg: 2px;
