@@ -81,6 +81,26 @@
         var summary = document.getElementById('filter-summary');
         var wsId = panel.dataset.workspaceId;
         var storageKey = 'filter:ws:' + wsId;
+        var openKey = 'filter-open:ws:' + wsId;
+
+        function setOpen(open, persist) {
+            if (open) {
+                panel.removeAttribute('hidden');
+            } else {
+                panel.setAttribute('hidden', '');
+            }
+            if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (persist) {
+                try { localStorage.setItem(openKey, open ? '1' : '0'); }
+                catch (e) {}
+            }
+        }
+
+        // Restore the open/closed state (default: closed). Once the user
+        // opens the filter it stays open across reloads and navigation.
+        try {
+            if (localStorage.getItem(openKey) === '1') setOpen(true, false);
+        } catch (e) { /* unavailable */ }
 
         var checkboxes = Array.from(panel.querySelectorAll('input[data-filter]'));
         var cards = Array.from(document.querySelectorAll('.board-card'));
@@ -197,21 +217,14 @@
 
         if (toggle) {
             toggle.addEventListener('click', function () {
-                var open = !panel.hasAttribute('hidden');
-                if (open) {
-                    panel.setAttribute('hidden', '');
-                    toggle.setAttribute('aria-expanded', 'false');
-                } else {
-                    panel.removeAttribute('hidden');
-                    toggle.setAttribute('aria-expanded', 'true');
-                }
+                // hasAttribute('hidden') === currently closed → open it.
+                setOpen(panel.hasAttribute('hidden'), true);
             });
         }
 
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && !panel.hasAttribute('hidden')) {
-                panel.setAttribute('hidden', '');
-                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                setOpen(false, true);
             }
         });
 

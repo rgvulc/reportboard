@@ -14,61 +14,6 @@
     </div>
 </div>
 
-<section id="filter-panel" class="filter-panel"
-         data-workspace-id="{{ workspace.id }}" hidden>
-    <div class="filter-section" data-filter-section="importance">
-        <div class="filter-section-header">
-            <h3>Importance</h3>
-            <div class="filter-section-actions">
-                <button type="button" class="filter-all">All</button>
-                <button type="button" class="filter-none">None</button>
-            </div>
-        </div>
-        <div class="filter-checkboxes">
-            {% for level in importance_levels %}
-                <label class="filter-checkbox">
-                    <input type="checkbox" data-filter="importance"
-                           value="{{ level.name }}" checked>
-                    {{ level.name }}
-                </label>
-            {% endfor %}
-            <label class="filter-checkbox">
-                <input type="checkbox" data-filter="importance" value="" checked>
-                <em>No importance</em>
-            </label>
-        </div>
-    </div>
-
-    <div class="filter-section" data-filter-section="tag">
-        <div class="filter-section-header">
-            <h3>Tags</h3>
-            <div class="filter-section-actions">
-                <button type="button" class="filter-all">All</button>
-                <button type="button" class="filter-none">None</button>
-            </div>
-        </div>
-        {% if workspace_tags %}
-            <input type="search" class="filter-tag-search"
-                   placeholder="Search tags…" autocomplete="off">
-        {% endif %}
-        <div class="filter-checkboxes filter-tag-list">
-            {% for tag in workspace_tags %}
-                <label class="filter-checkbox">
-                    <input type="checkbox" data-filter="tag"
-                           value="{{ tag }}" checked>
-                    {{ tag }}
-                </label>
-            {% endfor %}
-            <label class="filter-checkbox">
-                <input type="checkbox" data-filter="tag" value="" checked>
-                <em>No tags</em>
-            </label>
-        </div>
-    </div>
-
-    <div class="filter-summary" id="filter-summary"></div>
-</section>
-
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         <ul class="flashes">
@@ -79,24 +24,81 @@
     {% endif %}
 {% endwith %}
 
-<div class="board-columns">
-    {% for board in boards %}
-        <section class="board-column" data-board-id="{{ board.id }}">
-            <h2 class="board-column-title">{{ board.name }}</h2>
-            <ul class="board-cards">
-                {% for report in reports_by_board[board.id] %}
-                    <li class="board-card" data-report-id="{{ report.id }}"
-                        data-importance="{{ report.importance_name }}"
-                        data-tags="{{ report.tags|join(',') }}">
-                        <a class="board-card-link" href="{{ url_for('reports.detail', report_id=report.id) }}">{{ report.title }}</a>
-                    </li>
+<div class="board-area">
+    <div class="board-columns">
+        {% for board in boards %}
+            <section class="board-column" data-board-id="{{ board.id }}">
+                <h2 class="board-column-title">{{ board.name }}</h2>
+                <ul class="board-cards">
+                    {% for report in reports_by_board[board.id] %}
+                        <li class="board-card" data-report-id="{{ report.id }}"
+                            data-importance="{{ report.importance_name }}"
+                            data-tags="{{ report.tags|join(',') }}">
+                            <a class="board-card-link" href="{{ url_for('reports.detail', report_id=report.id) }}">{{ report.title }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <form method="post" action="{{ url_for('reports.create', workspace_id=workspace.id) }}" class="board-add-card">
+                    <input type="hidden" name="board_id" value="{{ board.id }}">
+                    <input type="text" name="title" placeholder="+ New report" required>
+                </form>
+            </section>
+        {% endfor %}
+    </div>
+
+    <section id="filter-panel" class="filter-panel"
+             data-workspace-id="{{ workspace.id }}" hidden>
+        <div class="filter-section" data-filter-section="importance">
+            <div class="filter-section-header">
+                <h3>Importance</h3>
+                <div class="filter-section-actions">
+                    <button type="button" class="filter-all">All</button>
+                    <button type="button" class="filter-none">None</button>
+                </div>
+            </div>
+            <div class="filter-checkboxes">
+                {% for level in importance_levels %}
+                    <label class="filter-checkbox">
+                        <input type="checkbox" data-filter="importance"
+                               value="{{ level.name }}" checked>
+                        {{ level.name }}
+                    </label>
                 {% endfor %}
-            </ul>
-            <form method="post" action="{{ url_for('reports.create', workspace_id=workspace.id) }}" class="board-add-card">
-                <input type="hidden" name="board_id" value="{{ board.id }}">
-                <input type="text" name="title" placeholder="+ New report" required>
-            </form>
-        </section>
-    {% endfor %}
+                <label class="filter-checkbox">
+                    <input type="checkbox" data-filter="importance" value="" checked>
+                    <em>No importance</em>
+                </label>
+            </div>
+        </div>
+
+        <div class="filter-section" data-filter-section="tag">
+            <div class="filter-section-header">
+                <h3>Tags</h3>
+                <div class="filter-section-actions">
+                    <button type="button" class="filter-all">All</button>
+                    <button type="button" class="filter-none">None</button>
+                </div>
+            </div>
+            {% if workspace_tags %}
+                <input type="search" class="filter-tag-search"
+                       placeholder="Search tags…" autocomplete="off">
+            {% endif %}
+            <div class="filter-checkboxes filter-tag-list">
+                {% for tag in workspace_tags %}
+                    <label class="filter-checkbox">
+                        <input type="checkbox" data-filter="tag"
+                               value="{{ tag }}" checked>
+                        {{ tag }}
+                    </label>
+                {% endfor %}
+                <label class="filter-checkbox">
+                    <input type="checkbox" data-filter="tag" value="" checked>
+                    <em>No tags</em>
+                </label>
+            </div>
+        </div>
+
+        <div class="filter-summary" id="filter-summary"></div>
+    </section>
 </div>
 {% endblock %}

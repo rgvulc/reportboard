@@ -357,7 +357,18 @@ main:has(.board-columns) {
     color: var(--accent);
 }
 
+/* Board area: kanban columns on the left, filter panel as a narrow
+   right column. When the panel is hidden it is display:none, so the
+   columns reclaim the full width. */
+.board-area {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
 .board-columns {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     gap: 0.75rem;
     overflow-x: auto;
@@ -1269,9 +1280,13 @@ input::placeholder, textarea::placeholder {
  *  Board filter (Filter button + panel)
  * ============================================================ */
 
+/* Pinned top-right, right edge flush with the theme switcher
+   (both use right: 0.75rem against the viewport). */
 .filter-toggle {
-    position: relative;
-    margin-left: auto;
+    position: fixed;
+    top: 2.5rem;
+    right: 0.75rem;
+    z-index: 99;
 }
 
 .filter-toggle.has-active-filter::after {
@@ -1286,15 +1301,19 @@ input::placeholder, textarea::placeholder {
 }
 
 .filter-panel {
+    flex: 0 0 15rem;
+    align-self: flex-start;
+    position: sticky;
+    top: 0.5rem;
+    max-height: calc(100vh - 1rem);
+    overflow-y: auto;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1.25rem;
-    align-items: flex-start;
 }
 
 .filter-panel[hidden] {
@@ -1302,7 +1321,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .filter-section {
-    flex: 1 1 18rem;
+    width: 100%;
     min-width: 0;
 }
 
@@ -1363,7 +1382,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .filter-summary {
-    flex: 1 1 100%;
+    width: 100%;
     color: var(--muted);
     font-size: 0.85rem;
     border-top: 1px solid var(--border);
