@@ -3,13 +3,15 @@
 {% block title %}{{ workspace.name }} — Reportboard{% endblock %}
 
 {% block content %}
-<div class="board-header">
+<div class="board-topbar">
     <a class="back-link" href="{{ url_for('workspaces.index') }}">← Workspaces</a>
-    <h1>{{ workspace.name }}</h1>
-    <button type="button" id="filter-toggle" class="filter-toggle"
-            aria-expanded="false" aria-controls="filter-panel">
-        Filter
-    </button>
+    <div class="board-header">
+        <h1>{{ workspace.name }}</h1>
+        <button type="button" id="filter-toggle" class="filter-toggle"
+                aria-expanded="false" aria-controls="filter-panel">
+            Filter
+        </button>
+    </div>
 </div>
 
 <section id="filter-panel" class="filter-panel"
